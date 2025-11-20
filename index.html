@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milano - Báo Cáo Quỹ</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script> 
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen active">
+        <div class="login-container">
+            <h1>🇮🇹 Milano Coffee</h1>
+            <h2>Đăng Nhập Hệ Thống</h2>
+            
+            <div class="login-form">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Mật khẩu" required>
+                <button onclick="login()">Đăng Nhập</button>
+                <button onclick="signUp()" class="secondary">Đăng Ký</button>
+            </div>
+
+            <div class="quick-login">
+                <h3>Demo Quick Login:</h3>
+                <button onclick="quickLogin('staff')" class="staff-btn">Nhân Viên Demo</button>
+                <button onclick="quickLogin('manager')" class="manager-btn">Quản Lý Demo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="screen">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1>☕ Milano Reports</h1>
+                <span id="userRole" class="role-badge">Nhân viên</span>
+            </div>
+            <div class="header-right">
+                <span id="userEmail">user@milano.com</span>
+                <button onclick="logout()" class="logout-btn">Đăng xuất</button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="app-nav">
+            <button class="nav-btn active" data-tab="report">📊 Báo Cáo</button>
+            <button class="nav-btn" data-tab="reports">📋 Lịch Sử</button>
+            <button class="nav-btn" data-tab="management" id="managementTab" style="display:none">👑 Quản Lý</button>
+        </nav>
+
+        <!-- Report Tab -->
+        <div id="reportTab" class="tab-content active">
+            <!-- Date Selector -->
+            <!-- Date Selector -->
+<div class="date-selector">
+    <label>📅 Ngày báo cáo:</label>
+    <input type="date" id="reportDate" class="date-input">
+    <button onclick="loadTodayData()" class="btn-refresh">📅 Hôm nay</button>
+</div>
+
+            <!-- Summary Cards -->
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="card-icon">💰</div>
+                    <div class="card-content">
+                        <h3>Số dư đầu</h3>
+                        <span id="startFundDisplay">0 ₫</span>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="card-icon">📈</div>
+                    <div class="card-content">
+                        <h3>Doanh thu</h3>
+                        <span id="revenueDisplay">0 ₫</span>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="card-icon">💸</div>
+                    <div class="card-content">
+                        <h3>Chi phí</h3>
+                        <span id="expensesDisplay">0 ₫</span>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="card-icon">🏦</div>
+                    <div class="card-content">
+                        <h3>Chuyển khoản</h3>
+                        <span id="transferDisplay">0 ₫</span>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="card-icon">💵</div>
+                    <div class="card-content">
+                        <h3>Tiền mặt</h3>
+                        <span id="cashDisplay">0 ₫</span>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="card-icon">🏦</div>
+                    <div class="card-content">
+                        <h3>Số dư cuối</h3>
+                        <span id="endFundDisplay">0 ₫</span>
+                    </div>
+                </div>
+                
+                <div class="summary-card highlight">
+                    <div class="card-icon">📊</div>
+                    <div class="card-content">
+                        <h3>Thực lãnh</h3>
+                        <span id="actualIncomeDisplay">0 ₫</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+<div class="action-buttons">
+    <button onclick="openTransferPopup()" class="btn-transfer">🏦 CK</button>
+    <button onclick="openExpensePopup()" class="btn-expense">💸 CP</button>
+    <button onclick="openReportPopup()" class="btn-report">📤 BC</button>
+</div>
+
+            <!-- Recent Reports -->
+            <div class="recent-reports">
+                <h3>📋 Báo cáo gần đây</h3>
+                <div id="recentReportsList" class="reports-list">
+                    <div class="report-item">
+                        <div class="report-date">Chưa có dữ liệu</div>
+                        <div class="report-amount">0 ₫</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reportsTab" class="tab-content">
+            <div class="reports-tab-container">
+                <div class="card">
+                    <h2>📋 Báo Cáo Đã Gửi</h2>
+                    
+                    <div class="filter-section">
+                        <button onclick="loadReports(0)" class="filter-btn active" data-days="0">Hôm nay</button>
+                        <button onclick="loadReports(1)" class="filter-btn" data-days="1">Hôm qua</button>
+                        
+                        <div id="managerReportFilters">
+                            <button onclick="loadReports(7)" class="filter-btn" data-days="7">7 Ngày</button>
+                            <button onclick="loadReports(30)" class="filter-btn" data-days="30">30 Ngày</button>
+                            <button onclick="showCustomDateModal()" class="filter-btn">📅 Tùy chọn</button>
+                        </div>
+                    </div>
+
+                    <div class="summary-cards">
+                        <div class="summary-card">
+                            <h3>Tổng Doanh Thu</h3>
+                            <span id="totalRevenueSummary">0 ₫</span>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Tổng Chi Phí</h3>
+                            <span id="totalExpensesSummary">0 ₫</span>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Thực Lãnh</h3>
+                            <span id="totalActualIncome">0 ₫</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="managerActionReports" style="display: none;">
+                    <button id="deleteAllButton" onclick="deleteAllReports()" class="btn-danger">
+                        ❌ Xóa TOÀN BỘ Dữ Liệu
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h2>📈 Phân Tích Dữ Liệu</h2>
+                    <div class="chart-container">
+                        <canvas id="reportsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Bảng Chi Tiết</h2>
+                    <div class="reports-table-container">
+                        <table id="reportsTable"> 
+                            <thead>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Doanh Thu</th>
+                                    <th>Chi Phí</th>
+                                    <th>Thực Lãnh</th>
+                                    <th>Trạng Thái</th>
+                                    <th>Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" style="text-align: center;">Chưa có dữ liệu</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Management Tab -->
+        <div id="managementTab" class="tab-content">
+            <div class="card">
+                <h2>👑 Quản Lý Nhân Viên</h2>
+                <div class="management-section">
+                    <h3>Danh sách nhân viên</h3>
+                    <table id="staffTable">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Vai trò</th>
+                                <th>Ngày tạo</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" style="text-align: center;">Đang tải...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer Popup -->
+    <div id="transferPopup" class="popup">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2>🏦 Chuyển Khoản</h2>
+                <button onclick="closeTransferPopup()" class="btn-close">×</button>
+            </div>
+            
+            <div class="popup-body">
+                <div class="add-transfer-form">
+                    <input type="number" id="transferValue" placeholder="Số tiền">
+                    <input type="text" id="transferDescription" placeholder="Nội dung">
+                    <button onclick="addTransferDetail()" class="btn-add">➕</button>
+                </div>
+
+                <div class="transfer-list">
+                    <h4>📋 Đã nhập:</h4>
+                    <div id="transferDetailsList" class="transfer-items">
+                        <div class="empty-state">Chưa có chuyển khoản</div>
+                    </div>
+                    <div class="transfer-total">
+                        <strong>Tổng: <span id="transferTotal">0</span> ₫</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transfer Popup Footer - Sửa nút doanh thu thành báo cáo -->
+<div class="popup-footer">
+    <button onclick="saveTransfers()" class="btn-save">💾 Lưu</button>
+    <button onclick="openReportPopupFromTransfer()" class="btn-report">📤 BC</button>
+    <button onclick="closeTransferPopup()" class="btn-cancel">❌ Hủy</button>
+</div>
+        </div>
+    </div>
+
+    <!-- Expense Popup -->
+    <div id="expensePopup" class="popup">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2>💸 Chi Phí</h2>
+                <button onclick="closeExpensePopup()" class="btn-close">×</button>
+            </div>
+            
+            <!-- Expense Popup - Custom dropdown cho mobile -->
+<div class="popup-body">
+    <div class="add-expense-form">
+        <!-- Custom Dropdown Container -->
+        <div class="custom-dropdown">
+            <input type="text" id="expenseCategory" class="dropdown-input" 
+                   placeholder="Tìm hoặc nhập loại chi phí mới" autocomplete="off">
+            <div id="categorySuggestions" class="dropdown-suggestions"></div>
+        </div>
+        
+        <input type="number" id="expenseAmount" placeholder="Số tiền">
+        <button onclick="addExpenseItem()" class="btn-add">➕</button>
+    </div>
+
+    <div class="expenses-list">
+        <h4>📋 Chi phí đã nhập:</h4>
+        <div id="currentExpensesList" class="expenses-items">
+            <div class="empty-state">Chưa có chi phí</div>
+        </div>
+        <div class="expenses-total">
+            <strong>Tổng: <span id="expensesTotal">0</span> ₫</strong>
+        </div>
+    </div>
+</div>
+
+            <!-- Expense Popup Footer - Thêm nút chuyển khoản -->
+<div class="popup-footer">
+    <button onclick="saveExpenses()" class="btn-save">💾 Lưu</button>
+    <button onclick="openTransferPopupFromExpense()" class="btn-transfer">🏦 CK</button>
+    <button onclick="openReportPopupFromExpense()" class="btn-report">📤 BC</button>
+    <button onclick="closeExpensePopup()" class="btn-cancel">❌ Hủy</button>
+</div>
+        </div>
+    </div>
+
+    <!-- Revenue Popup -->
+    <div id="revenuePopup" class="popup">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2>💰 Doanh Thu</h2>
+                <button onclick="closeRevenuePopup()" class="btn-close">×</button>
+            </div>
+            
+            <div class="popup-body">
+                <div class="revenue-method-selector">
+                    <h4>🔘 Chọn cách nhập:</h4>
+                    <div class="method-options">
+                        <label class="method-option">
+                            <input type="radio" name="revenueMethod" value="total" checked>
+                            <span>Nhập tổng → Tính TM & CK</span>
+                        </label>
+                        <label class="method-option">
+                            <input type="radio" name="revenueMethod" value="detail">
+                            <span>Nhập TM & CK → Tính tổng</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="revenue-inputs">
+                    <div class="form-group">
+                        <label>📊 Doanh thu tổng:</label>
+                        <input type="number" id="totalRevenue" placeholder="0" oninput="calculateFromTotal()">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>💵 Tiền mặt:</label>
+                        <input type="number" id="cashAmount" placeholder="0" oninput="calculateFromDetail()">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>🏦 Chuyển khoản:</label>
+                        <div class="transfer-summary">
+                            <span id="transferTotalRevenue">0 ₫</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="popup-footer">
+                <button onclick="confirmRevenue()" class="btn-submit">✅ Xác nhận</button>
+                <button onclick="openTransferPopupFromRevenue()" class="btn-transfer">🏦 CK</button>
+                <button onclick="closeRevenuePopup()" class="btn-cancel">❌ Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Popup -->
+<div id="reportPopup" class="popup">
+    <div class="popup-content">
+        <div class="popup-header">
+            <h2>📤 Báo Cáo</h2>
+            <button onclick="closeReportPopup()" class="btn-close">×</button>
+        </div>
+        
+        <div class="popup-body">
+            <div class="report-form">
+                <div class="form-group">
+                    <label>💰 Số dư đầu:</label>
+                    <input type="number" id="reportStartFund" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>📈 Doanh thu:</label>
+                    <input type="number" id="reportRevenue" placeholder="Nhập doanh thu">
+                </div>
+                
+                <!-- Thêm hiển thị CK và TM -->
+                <div class="form-group">
+                    <label>💵 Tiền mặt:</label>
+                    <div class="expenses-display">
+                        <span id="reportCashDisplay">0</span> ₫
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>🏦 Chuyển khoản:</label>
+                    <div class="expenses-display">
+                        <span id="reportTransferDisplay">0</span> ₫
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>💸 Chi phí:</label>
+                    <div class="expenses-display">
+                        <span id="reportExpenses">0</span> ₫
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>🏦 Số dư cuối:</label>
+                    <input type="number" id="reportEndFund" placeholder="Nhập số dư cuối">
+                </div>
+
+                <div class="calculation">
+                    <h4>🧮 Tính toán:</h4>
+                    <div class="formula">Doanh thu + Số dư đầu - Chi phí - Số dư cuối</div>
+                    <div class="result">Thực lãnh: <span id="calculatedIncome">0</span> ₫</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Popup Footer - Thêm nút chuyển khoản -->
+<div class="popup-footer">
+    <button onclick="submitReport()" class="btn-submit">📤 Gửi</button>
+    <button onclick="openTransferPopupFromReport()" class="btn-transfer">🏦 CK</button>
+    <button onclick="openExpensePopupFromReport()" class="btn-expense">💸 CP</button>
+    <button onclick="closeReportPopup()" class="btn-cancel">❌ Hủy</button>
+</div>
+    </div>
+</div>
+
+    <!-- Custom Date Modal -->
+    <div id="customDateModal" class="popup">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2>📅 Chọn Khoảng Thời Gian</h2>
+                <button onclick="closeCustomDateModal()" class="btn-close">×</button>
+            </div>
+            
+            <div class="popup-body">
+                <div class="form-group">
+                    <label>Từ ngày:</label>
+                    <input type="date" id="customStartDate">
+                </div>
+                <div class="form-group">
+                    <label>Đến ngày:</label>
+                    <input type="date" id="customEndDate">
+                </div>
+            </div>
+
+            <div class="popup-footer">
+                <button onclick="applyCustomDateFilter()" class="btn-primary">Áp dụng</button>
+                <button onclick="closeCustomDateModal()" class="btn-cancel">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Popup -->
+    <div id="alertPopup" class="popup">
+        <div class="popup-content alert">
+            <div class="popup-header">
+                <h2 id="alertTitle">⚠️ Thông báo</h2>
+            </div>
+            <div class="popup-body">
+                <p id="alertMessage"></p>
+            </div>
+            <div class="popup-footer">
+                <button onclick="closeAlert()" class="btn-confirm">✅ OK</button>
+            </div>
+        </div>
+    </div>
+<!-- Thêm vào index.html sau alert popup -->
+<!-- Report Detail Popup -->
+<div id="reportDetailPopup" class="popup">
+    <div class="popup-content">
+        <div class="popup-header">
+            <h2>📋 Chi Tiết Báo Cáo</h2>
+            <button onclick="closeReportDetailPopup()" class="btn-close">×</button>
+        </div>
+        
+        <div class="popup-body">
+            <div class="report-basic-info">
+                <h3>Thông tin cơ bản</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Ngày:</label>
+                        <span id="detailDate">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Người tạo:</label>
+                        <span id="detailCreator">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Số dư đầu:</label>
+                        <span id="detailStartFund">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Doanh thu:</label>
+                        <span id="detailRevenue">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Chi phí:</label>
+                        <span id="detailExpenses">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Số dư cuối:</label>
+                        <span id="detailEndFund">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Thực lãnh:</label>
+                        <span id="detailActualIncome">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="revenue-details" id="revenueDetailsSection" style="display: none;">
+                <h3>💳 Chi tiết doanh thu</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Tiền mặt:</label>
+                        <span id="detailCash">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Chuyển khoản:</label>
+                        <span id="detailTransfer">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="edit-history">
+                <h3>📝 Lịch sử chỉnh sửa</h3>
+                <div id="editHistoryList" class="history-list">
+                    <!-- Lịch sử sẽ được render here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="popup-footer">
+            <button onclick="closeReportDetailPopup()" class="btn-cancel">Đóng</button>
+        </div>
+    </div>
+</div>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
