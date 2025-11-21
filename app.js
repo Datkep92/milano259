@@ -15,14 +15,9 @@ let currentRevenueData = null;
 // Edit Management
 let editingItem = null;
 let editingType = null;
-
-// Global variables - ĐẢM BẢO KHAI BÁO ĐÚNG
+// Global variables - THÊM BIẾN NÀY
 let isInitializing = false;
 let isDataLoaded = false;
-let currentLoadDate = null; // THÊM BIẾN NÀY
-// ==================== AUTHENTICATION ====================
-
-         
 
 // Sửa hàm initializeApp()
 function initializeApp() {
@@ -428,7 +423,63 @@ function displayDailyExpenseStatistics(expenses, date) {
     
     console.log('Daily statistics displayed for date:', date);
 }
-
+async function loadDateData() {
+    const selectedDate = getElement('reportDate').value;
+    console.log('📅 Loading data for date:', selectedDate);
+    
+    // Kiểm tra nếu đang load cùng ngày thì không load lại
+    if (currentDate === selectedDate && currentExpenses.length > 0) {
+        console.log('📌 Already loaded data for this date, skipping...');
+        return;
+    }
+    
+    // RESET HOÀN TOÀN DỮ LIỆU KHI ĐỔI NGÀY
+    currentDate = selectedDate;
+    currentExpenses = [];
+    transferDetails = [];
+    currentRevenueData = null;
+    currentReportData = null;
+    
+    try {
+        console.log('🔄 Starting to load date data...');
+        
+        // 🚀 LOAD TẤT CẢ TRONG MỘT LẦN - không chia nhỏ
+        const [startFund, expenses, transfers, revenueData, reportData] = await Promise.all([
+            calculateStartFund(currentDate),
+            loadExpensesForDate(currentDate),
+            loadTransfersForDate(currentDate),
+            loadRevenueData(currentDate),
+            loadReportData(currentDate)
+        ]);
+        
+        console.log('✅ All data loaded successfully');
+        
+        // Cập nhật dữ liệu sau khi load
+        if (reportData) {
+            currentReportData = reportData;
+            console.log('📊 Report data found');
+        }
+        
+        if (revenueData) {
+            currentRevenueData = revenueData;
+            transferDetails = revenueData.transferDetails || [];
+            console.log('💰 Revenue data found');
+        }
+        
+        updateMainDisplay();
+        
+        // 📦 LOAD DỮ LIỆU PHỤ SAU KHI CHÍNH ĐÃ XONG
+        setTimeout(() => {
+            loadExpenseCategories();
+            loadRecentReports();
+            initializeDetailTabs();
+        }, 1000);
+        
+    } catch (error) {
+        console.error('❌ Error loading date data:', error);
+        updateMainDisplay();
+    }
+}
 
 async function loadExpensesForDate(date) {
     try {
@@ -484,6 +535,16 @@ async function loadTransfersForDate(date) {
     }
 }
 
+
+
+// Hàm khởi tạo tabs
+function initializeDetailTabs() {
+    // Đảm bảo tab đầu tiên được active
+    const firstTab = document.querySelector('.detail-tab-btn');
+    if (firstTab && !document.querySelector('.detail-tab-content.active')) {
+        showDetailTab('reports');
+    }
+}
 // Hàm debug để kiểm tra dữ liệu theo ngày
 async function debugCurrentData() {
     console.log('=== DEBUG CURRENT DATA ===');
@@ -554,9 +615,7 @@ function updateMainDisplay() {
     const startFund = parseFloat(getElement('reportStartFund').value) || 0;
     safeUpdate('startFundDisplay', formatCurrency(startFund));
 }
-// Thêm biến cache
-let expenseCategoriesCache = null;
-let lastCategoriesLoad = 0;
+
 // ==================== EXPENSE MANAGEMENT ====================
 async function loadExpenseCategories() {
     // Cache 5 phút
@@ -1916,7 +1975,24 @@ function displayDetailedExpenses(expenses) {
         }).join('');
 }
 
-
+function getStartDateFromTimeframe(timeframe) {
+    const today = new Date();
+    
+    if (timeframe === 0) {
+        return today.toISOString().split('T')[0];
+    } else if (timeframe === 1) {
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        return yesterday.toISOString().split('T')[0];
+    } else if (timeframe === 7 || timeframe === 30) {
+        const daysToSubtract = timeframe - 1;
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() - daysToSubtract);
+        return startDate.toISOString().split('T')[0];
+    }
+    
+    return today.toISOString().split('T')[0];
+}
 
 // ==================== CHART MANAGEMENT ====================
 function drawReportsChart(reports) {
@@ -2736,44 +2812,7 @@ function useFallbackCopy(text, successMessage) {
         showManualCopyDialog(text);
     }
 }
-async function loadExpenseStatistics(timeframe) {
-    try {
-        console.log('Loading expense statistics for timeframe:', timeframe);
-        const startDate = getStartDateFromTimeframe(timeframe);
-        console.log('Start date for filter:', startDate);
-        
-        let query = db.collection('daily_expenses')
-            .where('date', '>=', startDate);
-        
-        const snapshot = await query.orderBy('date', 'desc').get();
-        
-        const allExpenses = [];
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            console.log('Processing expenses for date:', data.date, 'count:', data.expenses?.length || 0);
-            
-            if (data.expenses && data.expenses.length > 0) {
-                data.expenses.forEach(expense => {
-                    allExpenses.push({
-                        ...expense,
-                        date: data.date,
-                        source: 'daily_expenses',
-                        documentId: doc.id
-                    });
-                });
-            }
-        });
-        
-        console.log('Total expenses found:', allExpenses.length);
-        
-        // Hiển thị thống kê với tiêu đề theo timeframe
-        displayExpenseStatisticsWithTimeframe(allExpenses, timeframe);
-        
-    } catch (error) {
-        console.error('Error in loadExpenseStatistics:', error);
-        handleFirestoreError(error, 'loadExpenseStatistics');
-    }
-}
+
 // ==================== DELETE ALL (MANAGER ONLY) ====================
 async function deleteAllReports() {
     if (!isManager()) {
@@ -2934,7 +2973,16 @@ async function loadExpenseStatistics(timeframe) {
         handleFirestoreError(error, 'loadExpenseStatistics');
     }
 }
-
+// Hàm lấy text hiển thị cho timeframe
+function getTimeframeText(timeframe) {
+    const texts = {
+        0: 'Hôm nay',
+        1: 'Hôm qua', 
+        7: '7 Ngày Gần Đây',
+        30: '30 Ngày Gần Đây'
+    };
+    return texts[timeframe] || 'Khoảng Thời Gian';
+}
 
 // Hàm lấy ngày bắt đầu từ timeframe
 function getStartDateFromTimeframe(timeframe) {
@@ -2955,7 +3003,118 @@ function getStartDateFromTimeframe(timeframe) {
     
     return today.toISOString().split('T')[0];
 }
+function displayExpenseStatisticsWithTimeframe(expenses, timeframe) {
+    const container = getElement('expenseStatistics');
+    console.log('Displaying expense statistics with timeframe:', timeframe);
+    console.log('Expenses data:', expenses);
+    
+    if (!container) {
+        console.error('Statistics container not found!');
+        return;
+    }
+    
+    if (!expenses || expenses.length === 0) {
+        const timeframeText = getTimeframeText(timeframe);
+        container.innerHTML = `
+            <div class="empty-state">
+                📊 ${timeframeText}: Không có chi phí nào
+            </div>
+        `;
+        console.log('No expenses to display for timeframe:', timeframe);
+        return;
+    }
 
+    // Nhóm chi phí theo loại
+    const groupedByCategory = {};
+    expenses.forEach(expense => {
+        if (!groupedByCategory[expense.category]) {
+            groupedByCategory[expense.category] = [];
+        }
+        groupedByCategory[expense.category].push(expense);
+    });
+
+    console.log('Grouped by category:', groupedByCategory);
+    
+    // Tính tổng tất cả chi phí
+    const totalAllExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const timeframeText = getTimeframeText(timeframe);
+
+    container.innerHTML = `
+        <div class="statistics-header-with-filter">
+            <h3>📊 Thống Kê Chi Phí - ${timeframeText}</h3>
+            <div class="statistics-summary">
+                <div class="summary-item">
+                    <span class="summary-label">Tổng chi phí:</span>
+                    <span class="summary-value">${formatCurrency(totalAllExpenses)}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Số loại chi phí:</span>
+                    <span class="summary-value">${Object.keys(groupedByCategory).length} loại</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Tổng số mục:</span>
+                    <span class="summary-value">${expenses.length} mục</span>
+                </div>
+            </div>
+        </div>
+        
+        ${Object.entries(groupedByCategory)
+            .sort((a, b) => {
+                const totalA = a[1].reduce((sum, item) => sum + item.amount, 0);
+                const totalB = b[1].reduce((sum, item) => sum + item.amount, 0);
+                return totalB - totalA;
+            })
+            .map(([category, categoryExpenses]) => {
+                const total = categoryExpenses.reduce((sum, item) => sum + item.amount, 0);
+                const count = categoryExpenses.length;
+                const percentage = totalAllExpenses > 0 ? ((total / totalAllExpenses) * 100).toFixed(1) : 0;
+                
+                // Nhóm theo ngày để hiển thị chi tiết
+                const groupedByDate = {};
+                categoryExpenses.forEach(expense => {
+                    if (!groupedByDate[expense.date]) {
+                        groupedByDate[expense.date] = [];
+                    }
+                    groupedByDate[expense.date].push(expense);
+                });
+                
+                return `
+                    <div class="category-group">
+                        <div class="category-header" onclick="toggleCategoryDetails('${category.replace(/\s+/g, '-')}-stats')">
+                            <span class="category-title">${category}</span>
+                            <span class="category-stats">
+                                ${count} mục • ${formatCurrency(total)} • ${percentage}%
+                            </span>
+                            <span class="category-toggle">▼</span>
+                        </div>
+                        <div class="category-details" id="details-${category.replace(/\s+/g, '-')}-stats" style="display: none;">
+                            ${Object.entries(groupedByDate)
+                                .sort((a, b) => new Date(b[0]) - new Date(a[0]))
+                                .map(([date, dayExpenses]) => {
+                                    const dayTotal = dayExpenses.reduce((sum, item) => sum + item.amount, 0);
+                                    return `
+                                        <div class="date-expense-group">
+                                            <div class="date-header">
+                                                <span class="date-title">📅 ${formatDisplayDate(date)}</span>
+                                                <span class="date-total">${formatCurrency(dayTotal)}</span>
+                                            </div>
+                                            ${dayExpenses.map(expense => `
+                                                <div class="expense-history-item">
+                                                    <span class="history-time">⏰ ${expense.createdAt ? formatVietnamDateTime(new Date(expense.createdAt)) : 'Không xác định'}</span>
+                                                    <span class="history-amount">${formatCurrency(expense.amount)}</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    `;
+                                }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+    `;
+    
+    console.log('Statistics displayed successfully for timeframe:', timeframe);
+}
 // Hiển thị thống kê chi phí theo loại
 function displayExpenseStatistics(expenses) {
     const container = getElement('expenseStatistics');
@@ -3042,8 +3201,7 @@ function toggleCategoryDetails(categoryId) {
 }
 // Thêm hàm loading indicator
 function showLoading(show = true) {
-    let loadingElement = getElement('loadingIndicator');
-    
+    const loadingElement = getElement('loadingIndicator');
     if (!loadingElement) {
         // Tạo loading indicator nếu chưa có
         const loader = document.createElement('div');
@@ -3051,17 +3209,16 @@ function showLoading(show = true) {
         loader.innerHTML = `
             <div class="loading-overlay">
                 <div class="loading-spinner"></div>
-                <div class="loading-text">Đang tải...</div>
+                <div class="loading-text">Đang tải dữ liệu...</div>
             </div>
         `;
         document.body.appendChild(loader);
-        loadingElement = loader;
     }
     
     if (show) {
-        loadingElement.style.display = 'flex';
+        getElement('loadingIndicator').style.display = 'flex';
     } else {
-        loadingElement.style.display = 'none';
+        getElement('loadingIndicator').style.display = 'none';
     }
 }
 
@@ -3150,375 +3307,7 @@ async function loadReportData(date) {
         return null;
     }
 }
-// ==================== PRINT MANAGEMENT ====================
-function printManagementReport() {
-    if (!isManager()) {
-        showAlert('Lỗi', 'Chỉ quản lý mới được sử dụng tính năng in báo cáo');
-        return;
-    }
 
-    console.log('🖨️ Preparing to print management report...');
-    
-    // Tạo cửa sổ in
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-        showAlert('Lỗi', 'Không thể mở cửa sổ in. Vui lòng cho phép popup.');
-        return;
-    }
-
-    // Lấy dữ liệu hiện tại từ bộ lọc
-    const timeframe = currentTimeframe;
-    const timeframeText = getTimeframeText(timeframe);
-    const printDate = new Date().toLocaleString('vi-VN');
-    
-    // Tạo nội dung HTML để in
-    const printContent = generatePrintContent(timeframe, timeframeText, printDate);
-    
-    // Ghi nội dung vào cửa sổ in
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    
-    // Chờ nội dung load xong rồi in
-    setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-    }, 500);
-}
-
-function generatePrintContent(timeframe, timeframeText, printDate) {
-    // Lấy dữ liệu từ các bảng hiện tại
-    const reportsTable = document.getElementById('reportsTable');
-    const summaryData = getSummaryData();
-    
-    return `
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Báo Cáo Quản Lý - Milano Coffee</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 20px;
-            color: #333;
-            font-size: 14px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 15px;
-        }
-        .header h1 {
-            color: #2c3e50;
-            margin: 0;
-            font-size: 24px;
-        }
-        .header h2 {
-            color: #7f8c8d;
-            margin: 5px 0;
-            font-size: 18px;
-        }
-        .print-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            font-size: 12px;
-            color: #666;
-        }
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-        .summary-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
-            text-align: center;
-        }
-        .summary-card h3 {
-            margin: 0 0 8px 0;
-            font-size: 14px;
-            color: #2c3e50;
-        }
-        .summary-card .value {
-            font-size: 18px;
-            font-weight: bold;
-            color: #e74c3c;
-        }
-        .table-container {
-            margin-bottom: 25px;
-        }
-        .table-container h3 {
-            background: #34495e;
-            color: white;
-            padding: 10px;
-            margin: 0;
-            font-size: 16px;
-            border-radius: 5px 5px 0 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th {
-            background: #ecf0f1;
-            padding: 10px;
-            text-align: left;
-            border: 1px solid #bdc3c7;
-            font-weight: bold;
-        }
-        td {
-            padding: 8px 10px;
-            border: 1px solid #bdc3c7;
-        }
-        tr:nth-child(even) {
-            background: #f8f9fa;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #bdc3c7;
-            font-size: 12px;
-            color: #7f8c8d;
-        }
-        .no-data {
-            text-align: center;
-            padding: 20px;
-            color: #7f8c8d;
-            font-style: italic;
-        }
-        @media print {
-            body { margin: 0; }
-            .no-print { display: none; }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>☕ MILANO COFFEE</h1>
-        <h2>BÁO CÁO QUẢN LÝ</h2>
-        <div class="print-info">
-            <span><strong>Khoảng thời gian:</strong> ${timeframeText}</span>
-            <span><strong>Ngày in:</strong> ${printDate}</span>
-            <span><strong>Người in:</strong> ${currentUser.email}</span>
-        </div>
-    </div>
-
-    ${generateSummarySection(summaryData)}
-    ${generateReportsSection()}
-    ${generateExpensesSection()}
-    ${generateTransfersSection()}
-
-    <div class="footer">
-        <p>Báo cáo được tạo tự động từ Hệ thống Quản lý Milano Coffee</p>
-        <p>📞 Hotline: 0909 999 999 | 📍 Địa chỉ: Milano Coffee</p>
-    </div>
-</body>
-</html>`;
-}
-
-function generateSummarySection(summaryData) {
-    return `
-    <div class="summary-cards">
-        <div class="summary-card">
-            <h3>Tổng Doanh Thu</h3>
-            <div class="value">${summaryData.totalRevenue}</div>
-        </div>
-        <div class="summary-card">
-            <h3>Tổng Chi Phí</h3>
-            <div class="value">${summaryData.totalExpenses}</div>
-        </div>
-        <div class="summary-card">
-            <h3>Thực Lãnh</h3>
-            <div class="value">${summaryData.totalActualIncome}</div>
-        </div>
-    </div>`;
-}
-
-function generateReportsSection() {
-    const reportsTable = document.getElementById('reportsTable');
-    const tbody = reportsTable ? reportsTable.querySelector('tbody') : null;
-    
-    if (!tbody || tbody.textContent.includes('Không có báo cáo')) {
-        return `
-        <div class="table-container">
-            <h3>📊 BÁO CÁO HÀNG NGÀY</h3>
-            <div class="no-data">Không có dữ liệu báo cáo</div>
-        </div>`;
-    }
-
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    let tableHTML = `
-    <div class="table-container">
-        <h3>📊 BÁO CÁO HÀNG NGÀY</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Ngày</th>
-                    <th>Doanh Thu</th>
-                    <th>Chi Phí</th>
-                    <th>Thực Lãnh</th>
-                    <th>Trạng Thái</th>
-                    <th>Người Tạo</th>
-                </tr>
-            </thead>
-            <tbody>`;
-
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 6) {
-            tableHTML += `
-                <tr>
-                    <td>${cells[0].textContent}</td>
-                    <td>${cells[1].textContent}</td>
-                    <td>${cells[2].textContent}</td>
-                    <td>${cells[3].textContent}</td>
-                    <td>${cells[4].textContent}</td>
-                    <td>${cells[5].textContent}</td>
-                </tr>`;
-        }
-    });
-
-    tableHTML += `
-            </tbody>
-        </table>
-    </div>`;
-    
-    return tableHTML;
-}
-
-function generateExpensesSection() {
-    const expensesList = document.getElementById('detailedExpensesList');
-    if (!expensesList) return '';
-
-    const dateGroups = expensesList.querySelectorAll('.date-group');
-    if (dateGroups.length === 0) {
-        return `
-        <div class="table-container">
-            <h3>💸 CHI TIẾT CHI PHÍ</h3>
-            <div class="no-data">Không có dữ liệu chi phí</div>
-        </div>`;
-    }
-
-    let tableHTML = `
-    <div class="table-container">
-        <h3>💸 CHI TIẾT CHI PHÍ</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Ngày</th>
-                    <th>Loại Chi Phí</th>
-                    <th>Số Tiền</th>
-                </tr>
-            </thead>
-            <tbody>`;
-
-    dateGroups.forEach(group => {
-        const dateHeader = group.querySelector('.date-title');
-        const date = dateHeader ? dateHeader.textContent.replace('📅 ', '') : 'N/A';
-        
-        const expenseItems = group.querySelectorAll('.expense-detail-item');
-        expenseItems.forEach(item => {
-            const category = item.querySelector('.expense-category');
-            const amount = item.querySelector('.expense-amount');
-            
-            if (category && amount) {
-                tableHTML += `
-                    <tr>
-                        <td>${date}</td>
-                        <td>${category.textContent}</td>
-                        <td>${amount.textContent}</td>
-                    </tr>`;
-            }
-        });
-    });
-
-    tableHTML += `
-            </tbody>
-        </table>
-    </div>`;
-    
-    return tableHTML;
-}
-
-function generateTransfersSection() {
-    const transfersList = document.getElementById('detailedTransfersList');
-    if (!transfersList) return '';
-
-    const dateGroups = transfersList.querySelectorAll('.date-group');
-    if (dateGroups.length === 0) {
-        return `
-        <div class="table-container">
-            <h3>🏦 CHI TIẾT CHUYỂN KHOẢN</h3>
-            <div class="no-data">Không có dữ liệu chuyển khoản</div>
-        </div>`;
-    }
-
-    let tableHTML = `
-    <div class="table-container">
-        <h3>🏦 CHI TIẾT CHUYỂN KHOẢN</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Ngày</th>
-                    <th>Nội Dung</th>
-                    <th>Số Tiền</th>
-                </tr>
-            </thead>
-            <tbody>`;
-
-    dateGroups.forEach(group => {
-        const dateHeader = group.querySelector('.date-title');
-        const date = dateHeader ? dateHeader.textContent.replace('📅 ', '') : 'N/A';
-        
-        const transferItems = group.querySelectorAll('.transfer-detail-item');
-        transferItems.forEach(item => {
-            const description = item.querySelector('.transfer-desc');
-            const amount = item.querySelector('.transfer-amount');
-            
-            if (description && amount) {
-                tableHTML += `
-                    <tr>
-                        <td>${date}</td>
-                        <td>${description.textContent}</td>
-                        <td>${amount.textContent}</td>
-                    </tr>`;
-            }
-        });
-    });
-
-    tableHTML += `
-            </tbody>
-        </table>
-    </div>`;
-    
-    return tableHTML;
-}
-
-function getSummaryData() {
-    return {
-        totalRevenue: document.getElementById('totalRevenueSummary')?.textContent || '0 ₫',
-        totalExpenses: document.getElementById('totalExpensesSummary')?.textContent || '0 ₫',
-        totalActualIncome: document.getElementById('totalActualIncome')?.textContent || '0 ₫'
-    };
-}
-
-function getTimeframeText(timeframe) {
-    const texts = {
-        0: 'Hôm nay',
-        1: 'Hôm qua',
-        7: '7 Ngày Gần Đây',
-        30: '30 Ngày Gần Đây'
-    };
-    return texts[timeframe] || 'Tất cả';
-}
 const style = document.createElement('style');
 style.textContent = additionalCSS;
 document.head.appendChild(style);
