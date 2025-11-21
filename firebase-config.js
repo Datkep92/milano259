@@ -14,36 +14,17 @@ const app = firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// 🚀 Tối ưu Firestore settings - THÊM {merge: true}
-const firestoreSettings = {
-    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
-};
-
-// Áp dụng settings với merge
-db.settings(firestoreSettings, { merge: true });
-
-// 🎯 Enable persistence với error handling
-async function enableFirestorePersistence() {
-    try {
-        await db.enablePersistence();
-        console.log('✅ Offline persistence enabled');
-    } catch (err) {
-        switch (err.code) {
-            case 'failed-precondition':
-                console.log('ℹ️ Multiple tabs open - persistence enabled in first tab only');
-                break;
-            case 'unimplemented':
-                console.log('⚠️ Browser does not support offline persistence');
-                break;
-            default:
-                console.log('❌ Persistence error:', err.message);
-        }
-    }
-}
-
-// 🚀 Khởi chạy persistence (không chặn app khởi động)
-setTimeout(() => {
-    enableFirestorePersistence();
-}, 1000);
+// Enable persistence với error handling
+db.enablePersistence()
+  .then(() => console.log('✅ Offline persistence enabled'))
+  .catch(err => {
+      if (err.code == 'failed-precondition') {
+          console.log('ℹ️ Multiple tabs open, persistence enabled in first tab only');
+      } else if (err.code == 'unimplemented') {
+          console.log('⚠️ Browser does not support persistence');
+      } else {
+          console.log('❌ Persistence error:', err);
+      }
+  });
 
 console.log('🚀 Firebase initialized successfully');
