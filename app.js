@@ -20,7 +20,241 @@ let editingType = null;
 let isInitializing = false;
 let isDataLoaded = false;
 let currentLoadDate = null; // THÊM BIẾN NÀY
+// ==================== AUTHENTICATION ====================
+async function login() {
+    const email = getElement('email').value;
+    const password = getElement('password').value;
+    
+    if (!email || !password) {
+        showAlert('Lỗi', 'Vui lòng nhập email và mật khẩu');
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        currentUser = userCredential.user;
+        showMainApp();
+        showToast('Đăng nhập thành công!', 'success');
+    } catch (error) {
+        console.error('Login error:', error);
+        let errorMessage = 'Đăng nhập thất bại';
+        
+        switch (error.code) {
+            case 'auth/invalid-email':
+                errorMessage = 'Email không hợp lệ';
+                break;
+            case 'auth/user-disabled':
+                errorMessage = 'Tài khoản đã bị vô hiệu hóa';
+                break;
+            case 'auth/user-not-found':
+                errorMessage = 'Không tìm thấy tài khoản';
+                break;
+            case 'auth/wrong-password':
+                errorMessage = 'Mật khẩu không đúng';
+                break;
+            case 'auth/too-many-requests':
+                errorMessage = 'Quá nhiều lần thử. Vui lòng thử lại sau';
+                break;
+            default:
+                errorMessage = error.message;
+        }
+        
+        showAlert('Đăng nhập thất bại', errorMessage);
+    } finally {
+        showLoading(false);
+    }
+}
 
+async function signUp() {
+    const email = getElement('email').value;
+    const password = getElement('password').value;
+    
+    if (!email || !password) {
+        showAlert('Lỗi', 'Vui lòng nhập email và mật khẩu');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showAlert('Lỗi', 'Mật khẩu phải có ít nhất 6 ký tự');
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        
+        // Tạo user document trong Firestore
+        await db.collection('users').doc(userCredential.user.uid).set({
+            email: email,
+            role: 'staff',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showAlert('Thành công', 'Đăng ký thành công! Bạn đã được đăng nhập tự động.');
+        
+    } catch (error) {
+        console.error('Sign up error:', error);
+        let errorMessage = 'Đăng ký thất bại';
+        
+        switch (error.code) {
+            case 'auth/email-already-in-use':
+                errorMessage = 'Email đã được sử dụng';
+                break;
+            case 'auth/invalid-email':
+                errorMessage = 'Email không hợp lệ';
+                break;
+            case 'auth/operation-not-allowed':
+                errorMessage = 'Tính năng đăng ký tạm thời bị tắt';
+                break;
+            case 'auth/weak-password':
+                errorMessage = 'Mật khẩu quá yếu';
+                break;
+            default:
+                errorMessage = error.message;
+        }
+        
+        showAlert('Đăng ký thất bại', errorMessage);
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function quickLogin(role) {
+    let email, password;
+    
+    if (role === 'manager') {
+        email = 'admin@milano.com';
+        password = 'admin123';
+    } else {
+        email = 'sale@milano.com';
+        password = 'sale123';
+    }
+    
+    try {
+        showLoading(true);
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        currentUser = userCredential.user;
+        showMainApp();
+        showToast(`Đăng nhập demo ${role === 'manager' ? 'Quản lý' : 'Nhân viên'} thành công!`, 'success');
+    } catch (error) {
+        console.error('Quick login error:', error);
+        
+        // Tạo tài khoản demo nếu chưa tồn tại
+        if (error.code === 'auth/user-not-found') {
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                await db.collection('users').doc(userCredential.user.uid).set({
+                    email: email,
+                    role: role === 'manager' ? 'manager' : 'staff',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    isDemo: true
+                });
+                currentUser = userCredential.user;
+                showMainApp();
+                showToast(`Đã tạo và đăng nhập demo ${role === 'manager' ? 'Quản lý' : 'Nhân viên'} thành công!`, 'success');
+            } catch (createError) {
+                showAlert('Lỗi demo', 'Không thể tạo tài khoản demo: ' + createError.message);
+            }
+        } else {
+            showAlert('Đăng nhập demo thất bại', error.message);
+        }
+    } finally {
+        showLoading(false);
+    }
+}
+
+function logout() {
+    if (confirm('Bạn có chắc muốn đăng xuất?')) {
+        auth.signOut().then(() => {
+            showToast('Đã đăng xuất thành công', 'success');
+        }).catch(error => {
+            console.error('Logout error:', error);
+            showAlert('Lỗi', 'Đăng xuất thất bại: ' + error.message);
+        });
+    }
+}
+
+function checkAuthState() {
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            await loadUserData();
+            showMainApp();
+        } else {
+            showLoginScreen();
+        }
+    });
+}
+
+async function loadUserData() {
+    try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        let manager = isManager();
+        
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            safeUpdate('userEmail', userData.email);
+            manager = manager || (userData.role === 'manager');
+            
+            // Cập nhật last login
+            await db.collection('users').doc(currentUser.uid).update({
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } else {
+            safeUpdate('userEmail', currentUser.email);
+            // Tạo user document nếu chưa có
+            await db.collection('users').doc(currentUser.uid).set({
+                email: currentUser.email,
+                role: manager ? 'manager' : 'staff',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        safeUpdate('userRole', manager ? 'Quản lý' : 'Nhân viên');
+
+        // Hiển thị icon quản lý cho manager
+        const managementIcon = getElement('managementIcon');
+        if (manager && managementIcon) {
+            managementIcon.style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error('Error loading user data:', error);
+        safeUpdate('userEmail', currentUser.email);
+        safeUpdate('userRole', 'Nhân viên');
+    }
+}
+
+function showLoginScreen() {
+    getElement('loginScreen').classList.add('active');
+    getElement('mainApp').classList.remove('active');
+    // Reset form
+    getElement('email').value = '';
+    getElement('password').value = '';
+}
+
+function showMainApp() {
+    getElement('loginScreen').classList.remove('active');
+    getElement('mainApp').classList.add('active');
+    
+    // Chỉ khởi tạo app nếu chưa có dữ liệu
+    if (currentExpenses.length === 0 && transferDetails.length === 0) {
+        initializeApp();
+    } else {
+        console.log('📌 App already initialized, skipping...');
+        updateMainDisplay();
+    }
+}
+
+function isManager() {
+    return currentUser && (
+        currentUser.email === 'admin@milano.com' || 
+        currentUser.email === 'manager@milano.com'
+    );
+}
 function initializeApp() {
     // KIỂM TRA KỸ HƠN
     if (isInitializing) {
@@ -3135,7 +3369,8 @@ function toggleCategoryDetails(categoryId) {
 }
 // Thêm hàm loading indicator
 function showLoading(show = true) {
-    const loadingElement = getElement('loadingIndicator');
+    let loadingElement = getElement('loadingIndicator');
+    
     if (!loadingElement) {
         // Tạo loading indicator nếu chưa có
         const loader = document.createElement('div');
@@ -3143,16 +3378,17 @@ function showLoading(show = true) {
         loader.innerHTML = `
             <div class="loading-overlay">
                 <div class="loading-spinner"></div>
-                <div class="loading-text">Đang tải dữ liệu...</div>
+                <div class="loading-text">Đang tải...</div>
             </div>
         `;
         document.body.appendChild(loader);
+        loadingElement = loader;
     }
     
     if (show) {
-        getElement('loadingIndicator').style.display = 'flex';
+        loadingElement.style.display = 'flex';
     } else {
-        getElement('loadingIndicator').style.display = 'none';
+        loadingElement.style.display = 'none';
     }
 }
 
