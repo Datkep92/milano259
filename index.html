@@ -6,8 +6,13 @@
     <title>Milano - Báo Cáo Quỹ</title>
     <link rel="stylesheet" href="styles.css">
     
+    <!-- Thư viện Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script> 
     
+    <!-- Thư viện SheetJS cho export Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -23,7 +28,7 @@
                 <input type="email" id="email" placeholder="Email" required>
                 <input type="password" id="password" placeholder="Mật khẩu" required>
                 <button onclick="login()">Đăng Nhập</button>
-                <button onclick="signUp()" class="secondary">Đăng Ký</button>
+<button onclick="signUp()" class="secondary">Đăng Ký</button>
             </div>
 
             <div class="quick-login">
@@ -37,237 +42,252 @@
     <!-- Main App -->
     <div id="mainApp" class="screen">
         <!-- Header -->
-        <header class="app-header">
-            <div class="header-left">
-                <h1>☕ Milano Reports</h1>
-                <span id="userRole" class="role-badge">Nhân viên</span>
-            </div>
-            <div class="header-right">
-                <span id="userEmail">user@milano.com</span>
-                <button id="managementIcon" style="display:none" class="management-btn" title="Quản lý">👑</button>
-                <button onclick="logout()" class="logout-btn">Đăng xuất</button>
-            </div>
-        </header>
+        <!-- TRONG PHẦN HEADER -->
+<<header class="app-header">
+    <div class="header-left">
+        <h1>☕ Milano</h1>
+    </div>
+    <div class="header-right">
+        <!-- ICON BÁO CÁO NGÀY - HIỆN CHO CẢ SALE VÀ QUẢN LÝ -->
+        <button id="dailyReportIcon" class="header-icon daily-report-btn" title="Báo cáo ngày" onclick="switchToDailyReport()">
+            <span class="icon">📊</span>
+            <span class="icon-text">Báo cáo</span>
+        </button>
+        
+        <!-- ICON QUẢN LÝ - CHỈ HIỆN CHO QUẢN LÝ -->
+        <button id="managementIcon" style="display:none" class="header-icon management-btn" title="Quản lý" onclick="switchToStaffManagement()">
+            <span class="icon">👑</span>
+            <span class="icon-text">QL</span>
+        </button>
+        
+        <button onclick="logout()" class="logout-btn">Đăng xuất</button>
+    </div>
+</header>
 
-        <!-- Main Content -->
         <main class="main-content">
-            <!-- Report Tab -->
-            <div id="reportTab" class="tab-content active">
-                <!-- Date Selector -->
-                <div class="date-selector">
-                    <label>📅 Ngày báo cáo:</label>
-                    <input type="date" id="reportDate" class="date-input">
-                    <button onclick="loadTodayData()" class="btn-refresh">📅 Hôm nay</button>
-                </div>
+    <!-- Tab Navigation -->
+    
 
-                <!-- Summary Cards -->
-                <div class="summary-grid">
-                    <div class="summary-card">
-                        <div class="card-icon">💰</div>
-                        <div class="card-content">
-                            <h3>Số dư đầu</h3>
-                            <span id="startFundDisplay">0 ₫</span>
+    <!-- Report Tab -->
+    <div id="reportTab" class="tab-content active">
+        <!-- NỘI DUNG TAB BÁO CÁO HIỆN TẠI GIỮ NGUYÊN -->
+        <div class="date-selector">
+            <label>📅 Ngày báo cáo:</label>
+            <input type="date" id="reportDate" class="date-input">
+        </div>
+
+        <!-- New Input Grid Layout -->
+        <div class="input-grid-new">
+            <!-- Hàng 1: Thực lãnh (QL) - Doanh thu (Nhập) -->
+            <div class="input-card-new" id="actualIncomeCard">
+                <div class="card-icon">📊</div>
+                <div class="card-content">
+                    <h3>Thực lãnh</h3>
+                    <div class="amount-display" id="actualIncomeDisplay" onclick="editActualIncome()">0 ₫</div>
+                    <div class="amount-input-container" id="actualIncomeInputContainer" style="display: none;">
+                        <input type="number" id="actualIncomeInput" class="amount-input">
+                        <div class="input-actions">
+                            <button onclick="saveActualIncome()" class="btn-confirm-small">✅</button>
+                            <button onclick="cancelEditActualIncome()" class="btn-cancel-small">❌</button>
                         </div>
                     </div>
-                    
-                    <div class="summary-card">
-                        <div class="card-icon">📈</div>
-                        <div class="card-content">
-                            <h3>Doanh thu</h3>
-                            <span id="revenueDisplay">0 ₫</span>
-                        </div>
-                    </div>
-                    
-                    <div class="summary-card">
-                        <div class="card-icon">💸</div>
-                        <div class="card-content">
-                            <h3>Chi phí</h3>
-                            <span id="expensesDisplay">0 ₫</span>
-                        </div>
-                    </div>
-                    
-                    <div class="summary-card">
-                        <div class="card-icon">🏦</div>
-                        <div class="card-content">
-                            <h3>Chuyển khoản</h3>
-                            <span id="transferDisplay">0 ₫</span>
-                        </div>
-                    </div>
-                    
-                    <div class="summary-card">
-                        <div class="card-icon">💵</div>
-                        <div class="card-content">
-                            <h3>Tiền mặt</h3>
-                            <span id="cashDisplay">0 ₫</span>
-                        </div>
-                    </div>
-                    
-                    <div class="summary-card">
-                        <div class="card-icon">🏦</div>
-                        <div class="card-content">
-                            <h3>Số dư cuối</h3>
-                            <span id="endFundDisplay">0 ₫</span>
-                        </div>
-                    </div>
-                    
-                    <div class="summary-card highlight">
-                        <div class="card-icon">📊</div>
-                        <div class="card-content">
-                            <h3>Thực lãnh</h3>
-                            <span id="actualIncomeDisplay">0 ₫</span>
+                    <small class="manager-only">Chỉ quản lý</small>
+                </div>
+            </div>
+            
+            <div class="input-card-new" id="revenueCard">
+                <div class="card-icon">📈</div>
+                <div class="card-content">
+                    <h3>Doanh thu</h3>
+                    <div class="amount-display" id="revenueDisplay" onclick="editRevenue()">0 ₫</div>
+                    <div class="amount-input-container" id="revenueInputContainer" style="display: none;">
+                        <input type="number" id="revenueInput" class="amount-input">
+                        <div class="input-actions">
+                            <button onclick="saveRevenue()" class="btn-confirm-small">✅</button>
+                            <button onclick="cancelEditRevenue()" class="btn-cancel-small">❌</button>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Action Buttons -->
-                <div class="action-buttons">
-                    <button onclick="openTransferPopup()" class="btn-transfer">🏦 CK</button>
-                    <button onclick="openExpensePopup()" class="btn-expense">💸 CP</button>
-                    <button onclick="openRevenuePopup()" class="btn-revenue">💰 DT</button>
-                    <button onclick="openReportPopup()" class="btn-report">📤 BC</button>
+            <!-- Hàng 2: Số dư đầu - Chi phí -->
+            <div class="input-card-new">
+                <div class="card-icon">💰</div>
+                <div class="card-content">
+                    <h3>Số dư đầu kỳ</h3>
+                    <div class="amount-display" id="startFundDisplay">0 ₫</div>
                 </div>
+            </div>
+            
+            <div class="input-card-new clickable" onclick="openExpensePopup()">
+                <div class="card-icon">💸</div>
+                <div class="card-content">
+                    <h3>Chi phí</h3>
+                    <div class="amount-display" id="expensesDisplay">0 ₫</div>
+                </div>
+            </div>
 
-                <!-- Recent Reports -->
-                <!-- Recent Reports -->
-<div class="recent-reports">
-    <h3>📋 Báo cáo gần đây</h3>
-    <small style="color: #666; margin-bottom: 10px; display: block;">
-        💸 Chi phí | 🏦 Chuyển khoản | 💰 Thực lãnh - Click để xem chi tiết
-    </small>
-    <div id="recentReportsList" class="reports-list">
-        <div class="report-item">
-            <div class="report-info">
-                <div class="report-date">Chưa có dữ liệu</div>
+            <!-- Hàng 3: Chuyển khoản - Số dư cuối kỳ -->
+            <div class="input-card-new clickable" onclick="openTransferPopup()">
+                <div class="card-icon">🏦</div>
+                <div class="card-content">
+                    <h3>Chuyển khoản</h3>
+                    <div class="amount-display" id="transferDisplay">0 ₫</div>
+                </div>
+            </div>
+            
+            <div class="input-card-new" id="endFundCard">
+                <div class="card-icon">🏦</div>
+                <div class="card-content">
+                    <h3>Số dư cuối kỳ</h3>
+                    <div class="amount-display" id="endFundDisplay" onclick="editEndFund()">0 ₫</div>
+                    <div class="amount-input-container" id="endFundInputContainer" style="display: none;">
+                        <input type="number" id="endFundInput" class="amount-input">
+                        <div class="input-actions">
+                            <button onclick="saveEndFund()" class="btn-confirm-small">✅</button>
+                            <button onclick="cancelEditEndFund()" class="btn-cancel-small">❌</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="submit-section">
+            <button onclick="quickSubmitReport()" class="btn-submit-large">📤 Gửi Báo Cáo</button>
+            <small class="submit-note">Tự động tính: Thực lãnh = Số dư đầu + Doanh thu - Chi phí - Chuyển khoản - Số dư cuối</small>
+        </div>
+
+        <!-- Recent Reports -->
+        <div class="recent-reports">
+            <h3>📋 Báo cáo gần đây</h3>
+            <small style="color: #666; margin-bottom: 10px; display: block;">
+                Click để xem chi tiết hoặc sửa bằng popup cũ
+            </small>
+            <div id="recentReportsList" class="reports-list">
+                <div class="report-item">
+                    <div class="report-info">
+                        <div class="report-date">Chưa có dữ liệu</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-            </div>
 
-            <!-- Reports Tab -->
-            <div id="reportsTab" class="tab-content">
-                <div class="reports-tab-container">
-                    <!-- Trong phần filter-section của reportsTab -->
+   <!-- TRONG PHẦN REPORTS TAB - CẬP NHẬT SUMMARY CARDS -->
+<div id="reportsTab" class="tab-content">
+    <div class="reports-tab-container">
+        <!-- CẬP NHẬT FILTER SECTION -->
 <div class="filter-section">
     <button onclick="loadReports(0)" class="filter-btn active" data-days="0">Hôm nay</button>
     <button onclick="loadReports(1)" class="filter-btn" data-days="1">Hôm qua</button>
-    <button onclick="loadReports(7)" class="filter-btn" data-days="7">7 Ngày</button>
     <button onclick="loadReports(30)" class="filter-btn" data-days="30">30 Ngày</button>
-    <button onclick="showCustomDateModal()" class="filter-btn">📅 Tùy chọn</button>
-    <!-- 🖨️ THÊM NÚT IN -->
-    <button onclick="printManagementReport()" class="filter-btn btn-print">🖨️ In Báo Cáo</button>
+    <button onclick="showCustomDateModal()" class="filter-btn">Tùy chọn</button>
+    <!-- THAY THẾ NÚT IN BẰNG QUẢN LÝ USER -->
+    <button onclick="switchToStaffManagement()" class="filter-btn btn-management">👑 Quản Lý User</button>
 </div>
 
-                    <!-- Summary Cards -->
-                    <div class="summary-cards">
-                        <div class="summary-card">
-                            <h3>Tổng Doanh Thu</h3>
-                            <span id="totalRevenueSummary">0 ₫</span>
-                        </div>
-                        <div class="summary-card">
-                            <h3>Tổng Chi Phí</h3>
-                            <span id="totalExpensesSummary">0 ₫</span>
-                        </div>
-                        <div class="summary-card">
-                            <h3>Thực Lãnh</h3>
-                            <span id="totalActualIncome">0 ₫</span>
-                        </div>
-                    </div>
-
-                    <!-- Manager Actions -->
-                    <div id="managerActionReports" style="display: none;">
-                        <button id="deleteAllButton" onclick="deleteAllReports()" class="btn-danger">
-                            ❌ Xóa TOÀN BỘ Dữ Liệu
-                        </button>
-                    </div>
-
-                    <!-- Chart -->
-                    <div class="card">
-                        <h2>📈 Phân Tích Dữ Liệu</h2>
-                        <div class="chart-container">
-                            <canvas id="reportsChart"></canvas>
-                        </div>
-                    </div>
-
-    <div class="tabs-container">
-    <div class="detail-tabs">
-        <button class="detail-tab-btn active" onclick="showDetailTab('reports')">Báo Cáo</button>
-        <button class="detail-tab-btn" onclick="showDetailTab('transfers')">Chi Tiết CK</button>
-        <button class="detail-tab-btn" onclick="showDetailTab('expenses')">Chi Tiết CP</button>
-        <button class="detail-tab-btn" onclick="showDetailTab('statistics')">📊 Thống Kê CP</button>
-        <button class="detail-tab-btn" onclick="showDetailTab('staff')">Quản Lý User</button>
-    </div>
-
-    <!-- Reports Table - GIỮ NGUYÊN -->
-    <div id="reportsDetailTab" class="detail-tab-content active">
-        <div class="card">
-            <h2>Bảng Chi Tiết Báo Cáo</h2>
-            <div class="reports-table-container">
-                <table id="reportsTable">
-                    <thead>
-                        <tr>
-                            <th>Ngày</th>
-                            <th>Doanh Thu</th>
-                            <th>Chi Phí</th>
-                            <th>Thực Lãnh</th>
-                            <th>Trạng Thái</th>
-                            <th>Người Tạo</th>
-                            <th>Thao Tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="7" style="text-align: center;">Đang tải...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Transfers Detail - GIỮ NGUYÊN -->
-    <div id="transfersDetailTab" class="detail-tab-content">
-        <div class="card">
-            <h2>📋 Chi Tiết Chuyển Khoản</h2>
-            <div id="detailedTransfersList" class="detailed-list">
-                <div class="empty-state">Chưa có dữ liệu</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Expenses Detail - GIỮ NGUYÊN -->
-    <div id="expensesDetailTab" class="detail-tab-content">
-        <div class="card">
-            <h2>📋 Chi Tiết Chi Phí</h2>
-            <div id="detailedExpensesList" class="detailed-list">
-                <div class="empty-state">Chưa có dữ liệu</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- CHỈ THÊM TAB MỚI - Statistics Detail -->
-    <div id="statisticsDetailTab" class="detail-tab-content">
-        <div class="card">
-            <h2>📊 Thống Kê Chi Phí Theo Loại</h2>
-            <div id="expenseStatistics" class="statistics-list">
-                <div class="empty-state">Đang tải...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Staff Management - GIỮ NGUYÊN -->
-    <div id="staffDetailTab" class="detail-tab-content">
-        <div class="card">
-            <h2>👑 Quản Lý Nhân Viên</h2>
-            <div id="staffManagementList" class="staff-list">
-                <div class="empty-state">Đang tải...</div>
-            </div>
-        </div>
-    </div>
-</div>
+        <!-- NEW SUMMARY GRID - 2 CARDS PER ROW -->
+        <div class="summary-grid-manager">
+            <!-- Hàng 1: Tổng doanh thu - Tổng thực lãnh -->
+            <div class="summary-card-manager clickable" onclick="showRevenueDetails()">
+                <div class="card-icon">📈</div>
+                <div class="card-content">
+                    <h3>Tổng Doanh Thu</h3>
+                    <span id="totalRevenueSummary">0 ₫</span>
                 </div>
             </div>
-        </main>
+            
+            <div class="summary-card-manager clickable" onclick="showIncomeDetails()">
+                <div class="card-icon">💰</div>
+                <div class="card-content">
+                    <h3>Tổng Thực Lãnh</h3>
+                    <span id="totalActualIncome">0 ₫</span>
+                </div>
+            </div>
+
+            <!-- Hàng 2: Tổng chi phí - Tổng chuyển khoản -->
+            <div class="summary-card-manager clickable" onclick="showExpensesDetails()">
+                <div class="card-icon">💸</div>
+                <div class="card-content">
+                    <h3>Tổng Chi Phí</h3>
+                    <span id="totalExpensesSummary">0 ₫</span>
+                </div>
+            </div>
+            
+            <div class="summary-card-manager clickable" onclick="showTransfersDetails()">
+                <div class="card-icon">🏦</div>
+                <div class="card-content">
+                    <h3>Tổng Chuyển Khoản</h3>
+                    <span id="totalTransfersSummary">0 ₫</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="detailViewContainer" class="detail-view-container" style="display: none;">
+    <div class="detail-view-header">
+        <h2 id="detailViewTitle">Chi Tiết</h2>
+        <div class="detail-view-actions">
+            <button onclick="printDetailTable()" class="btn-print">🖨️ In</button>
+            <button onclick="exportToExcel()" class="btn-excel">📊 Excel</button>
+            <button onclick="exportFullReport()" class="btn-excel-full">📈 Xuất Toàn Bộ</button>
+            <button onclick="closeDetailView()" class="btn-close">✕ Đóng</button>
+        </div>
+    </div>
+    <div id="detailViewContent" class="detail-view-content">
+        <!-- Nội dung chi tiết sẽ được render ở đây -->
+    </div>
+</div>
+
+        <!-- ORIGINAL CONTENT - ẨN KHI XEM CHI TIẾT -->
+        <div id="originalContent">
+            <!-- Manager Actions -->
+            <div id="managerActionReports" style="display: none;">
+                <button id="deleteAllButton" onclick="deleteAllReports()" class="btn-danger">
+                    ❌ Xóa TOÀN BỘ Dữ Liệu
+                </button>
+            </div>
+
+            <!-- Chart -->
+            <div class="card">
+                <h2>📈 Phân Tích Dữ Liệu</h2>
+                <div class="chart-container">
+                    <canvas id="reportsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Detail Tabs Container -->
+            <div class="tabs-container">
+                
+
+                <!-- Các tab detail giữ nguyên -->
+                <div id="reportsDetailTab" class="detail-tab-content active">
+                    <!-- Nội dung giữ nguyên -->
+                </div>
+                <div id="transfersDetailTab" class="detail-tab-content">
+                    <!-- Nội dung giữ nguyên -->
+                </div>
+                <div id="expensesDetailTab" class="detail-tab-content">
+                    <!-- Nội dung giữ nguyên -->
+                </div>
+                <div id="statisticsDetailTab" class="detail-tab-content">
+                    <!-- Nội dung giữ nguyên -->
+                </div>
+                <!-- TRONG PHẦN STAFF MANAGEMENT DETAIL -->
+<div id="staffDetailTab" class="detail-tab-content">
+    <div class="card">
+        <h2>👑 Quản Lý Nhân Viên</h2>
+        <!-- ĐẢM BẢO ID ĐÚNG LÀ staffList -->
+        <div id="staffList" class="staff-list">
+            <div class="empty-state">Đang tải...</div>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+</main>
     </div>
 
     <!-- ==================== POPUPS ==================== -->
