@@ -237,6 +237,17 @@ function showMainApp() {
 
 
 function setupEventListeners() {
+    // Gắn sự kiện cho nút Đăng nhập và Đăng ký (FIX: ReferenceError)
+    const loginBtn = document.getElementById('loginButton');
+    const signUpBtn = document.getElementById('signUpButton');
+
+    if (loginBtn) {
+        loginBtn.addEventListener('click', login);
+    }
+    
+    if (signUpBtn) {
+        signUpBtn.addEventListener('click', signUp);
+    }
     // Date change listener - RESET HOÀN TOÀN KHI ĐỔI NGÀY
     getElement('reportDate')?.addEventListener('change', function() {
         console.log('Date changed to:', this.value);
@@ -618,13 +629,6 @@ function updateMainDisplay() {
 
 // ==================== EXPENSE MANAGEMENT ====================
 async function loadExpenseCategories() {
-    // Cache 5 phút
-    if (expenseCategoriesCache && (Date.now() - lastCategoriesLoad) < 300000) {
-        expenseCategories = expenseCategoriesCache;
-        updateExpenseCategoryDropdown();
-        return;
-    }
-    
     try {
         const categoriesDoc = await db.collection('expense_categories').doc('milano').get();
         
@@ -638,14 +642,10 @@ async function loadExpenseCategories() {
             });
         }
         
-        // Update cache
-        expenseCategoriesCache = expenseCategories;
-        lastCategoriesLoad = Date.now();
-        
         updateExpenseCategoryDropdown();
         
     } catch (error) {
-        console.error('Error loading expense categories:', error);
+        handleFirestoreError(error, 'loadExpenseCategories');
         expenseCategories = ['Ăn uống', 'Xăng xe', 'Văn phòng phẩm', 'Tiếp khách', 'Bảo trì', 'Khác'];
         updateExpenseCategoryDropdown();
     }
