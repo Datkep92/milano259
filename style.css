@@ -3390,3 +3390,85 @@ datalist option {
             padding: 6px 8px;
         }
     }
+
+    /* Header cực gọn - ép buộc chiều cao */
+.header {
+    background: #ffffff;
+    padding: 2px 8px !important;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+}
+
+.user-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    height: 40px !important;
+}
+
+.tab-btn {
+    flex: 1;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    padding: 4px 2px !important;
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    height: 36px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+}
+
+.tab-btn.active {
+    background: #85792c;
+}
+
+/* Mobile nhỏ */
+@media (max-width: 380px) {
+    .header {
+        padding: 1px 6px !important;
+        height: 42px !important;
+    }
+    
+    .user-info {
+        height: 38px !important;
+    }
+    
+    .tab-btn {
+        font-size: 13px;
+        min-height: 34px !important;
+        max-height: 34px !important;
+        height: 34px !important;
+    }
+}
+
+/* Force override mọi CSS khác */
+#app .header,
+body .header,
+html .header {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    padding: 2px 8px !important;
+}
+
+#app .tab-btn,
+body .tab-btn, 
+html .tab-btn {
+    min-height: 36px !important;
+    max-height: 36px !important;
+    height: 36px !important;
+    padding: 4px 2px !important;
+    margin: 0 !important;
+}
