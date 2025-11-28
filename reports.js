@@ -343,13 +343,12 @@ async function renderReportsTab(container, report) {
     
     container.innerHTML = `
         <div class="section">
-            <div class="report-header">
-                ${isSaved ? '<div class="saved-badge">✅ĐÃ LƯU</div>' : ''}
-            </div>
+            
             
             <div class="date-selector">
                 <input type="date" class="date-input" value="${report.date}" id="dateInput" 
                        onchange="changeDateByInput(this.value)">
+                ${isSaved ? '<div class="saved-badge">✅ĐÃ LƯU</div>' : ''}
             </div>
 
             <div class="summary-grid">
@@ -388,7 +387,7 @@ async function renderReportsTab(container, report) {
 
             <div class="action-buttons">
                 <button class="btn btn-primary" data-action="save-report">
-                    ${isSaved ? '💾 Cập nhật báo cáo' : '💾 Lưu báo cáo'}
+                    ${isSaved ? '💾 Cập nhật' : '💾 Lưu'}
                 </button>
                 <button class="btn btn-success" data-action="share-zalo">📱 Gửi Zalo</button>
             </div>
@@ -397,9 +396,9 @@ async function renderReportsTab(container, report) {
         <!-- PHẦN XUẤT KHO - HIỆN TẠI -->
         <div class="section">
             <div class="section-header-with-action">
-                <h2>📦 Xuất kho trong ngày</h2>
+                <h2>📦 Kho hàng</h2>
                 <button class="btn btn-outline btn-sm" data-action="toggle-inventory-list">
-                    ${showInventoryList ? '▲ Ẩn danh sách' : '▼ Hiện danh sách'}
+                   ${showInventoryList ? '👁‍🗨' : '👁'}
                 </button>
             </div>
             
@@ -466,27 +465,28 @@ async function renderReportsTab(container, report) {
             </div>
         </div>
 
-        <!-- PHẦN LỊCH SỬ BÁO CÁO -->
-        <div class="section">
-            <div class="section-header-with-action">
-                <h2>📜 Lịch sử Báo cáo</h2>
-                <button class="btn btn-outline btn-sm" data-action="toggle-reports-history">
-                    ${showReportsHistory ? '▲ Ẩn' : '▼ Xem'}
-                </button>
-            </div>
-            ${showReportsHistory ? await renderReportsHistory() : ''}
-        </div>
+       <!-- PHẦN LỊCH SỬ BÁO CÁO -->
+<div class="section">
+    <div class="section-header-with-action">
+        <h2>📜 Lịch sử Báo cáo</h2>
+        <button class="btn btn-outline btn-sm" data-action="toggle-reports-history">
+            ${showReportsHistory ? '👁‍🗨' : '👁'}
+        </button>
+    </div>
+    ${showReportsHistory ? await renderReportsHistory() : ''}
+</div>
 
-        <!-- PHẦN LỊCH SỬ MUA SẮM -->
-        <div class="section">
-            <div class="section-header-with-action">
-                <h2>🛒 Lịch sử Mua sắm</h2>
-                <button class="btn btn-outline btn-sm" data-action="toggle-operations-history">
-                    ${showOperationsHistory ? '▲ Ẩn' : '▼ Hiện'}
-                </button>
-            </div>
-            ${showOperationsHistory ? await renderOperationsHistory() : ''}
-        </div>
+<!-- PHẦN LỊCH SỬ MUA SẮM -->
+<div class="section">
+    <div class="section-header-with-action">
+        <h2>🛒 Lịch sử Mua sắm</h2>
+        <button class="btn btn-outline btn-sm" data-action="toggle-operations-history">
+            ${showOperationsHistory ? '👁‍🗨' : '👁'}
+        </button>
+    </div>
+    ${showOperationsHistory ? await renderOperationsHistory() : ''}
+</div>
+
 
         ${isAdmin() ? `
         <div class="section">
