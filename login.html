@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đăng nhập - Quản Lý Cafe</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-box">
+            <h1>☕ Quản Lý Cafe</h1>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="phone">Số điện thoại:</label>
+                    <input type="tel" id="phone" placeholder="Nhập số điện thoại" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Mật khẩu (Admin):</label>
+                    <input type="password" id="password" placeholder="Chỉ dành cho Admin">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="login-btn">Đăng nhập</button>
+                    <button type="button" id="employeeLogin" class="employee-btn">Đăng nhập NV</button>
+                </div>
+
+                <div class="login-info">
+                    <p><strong>Admin:</strong> password: 123123</p>
+                    <p><strong>Nhân viên:</strong> Chỉ cần số điện thoại</p>
+                </div>
+            </form>
+
+            <div id="loginMessage" class="message"></div>
+        </div>
+    </div>
+
+    <script src="database.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                await initializeDatabase();
+                await initializeSampleData();
+                setupLoginEventListeners();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showLoginMessage('Lỗi khởi tạo ứng dụng', 'error');
+            }
+        });
+
+        function setupLoginEventListeners() {
+            const loginForm = document.getElementById('loginForm');
+            const employeeBtn = document.getElementById('employeeLogin');
+            const messageDiv = document.getElementById('loginMessage');
+
+            function showLoginMessage(message, type) {
+                messageDiv.textContent = message;
+                messageDiv.className = `message ${type}`;
+                messageDiv.style.display = 'block';
+            }
+
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const phone = document.getElementById('phone').value.trim();
+                const password = document.getElementById('password').value;
+
+                const result = await login(phone, password);
+                if (result.success) {
+                    showLoginMessage(result.message || 'Đăng nhập thành công!', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } else {
+                    showLoginMessage(result.message, 'error');
+                }
+            });
+
+            employeeBtn.addEventListener('click', async function() {
+                const phone = document.getElementById('phone').value.trim();
+                if (!phone) {
+                    showLoginMessage('Vui lòng nhập số điện thoại', 'error');
+                    return;
+                }
+
+                const result = await login(phone, '');
+                if (result.success) {
+                    showLoginMessage(result.message || 'Đăng nhập nhân viên thành công!', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } else {
+                    showLoginMessage(result.message, 'error');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
