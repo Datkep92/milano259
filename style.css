@@ -1826,172 +1826,8 @@ input, textarea, select {
     }
 }
 
-/* FIX: CSS cho date-selector sau khi loại bỏ nút tiến lùi */
-.date-selector {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    background: #f7fafc;
-    padding: 12px;
-    border-radius: 12px;
-}
 
-.date-input {
-    flex: 1;
-    text-align: center;
-    font-size: 16px !important;
-    font-weight: 600;
-    color: #2d3748;
-    background: white;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 12px;
-    min-height: 44px;
-}
 
-/* FIX: CSS cho section-header-with-action - đảm bảo cùng dòng trên mobile */
-.section-header-with-action {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    flex-wrap: nowrap;
-    gap: 12px;
-}
-
-.section-header-with-action h2 {
-    margin-bottom: 0;
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.section-header-with-action .btn {
-    flex-shrink: 0;
-    white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-    .section-header-with-action {
-        flex-wrap: nowrap;
-        gap: 8px;
-    }
-    
-    .section-header-with-action h2 {
-        font-size: 16px;
-        min-width: auto;
-    }
-    
-    .section-header-with-action .btn {
-        font-size: 12px;
-        padding: 8px 12px;
-    }
-}
-
-/* FIX: CSS cho tất cả section-header-with-action */
-.section-header-with-action {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    flex-wrap: nowrap;
-    gap: 12px;
-}
-
-.section-header-with-action h2 {
-    margin-bottom: 0;
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 18px;
-    font-weight: 700;
-    color: #1a1a1a;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header-with-action .btn {
-    flex-shrink: 0;
-    white-space: nowrap;
-    min-height: 36px;
-    padding: 8px 16px;
-    font-size: 13px;
-    border-radius: 8px;
-}
-
-/* Responsive cho mobile */
-@media (max-width: 480px) {
-    .section-header-with-action {
-        flex-wrap: nowrap;
-        gap: 8px;
-    }
-    
-    .section-header-with-action h2 {
-        font-size: 16px;
-        min-width: auto;
-    }
-    
-    .section-header-with-action .btn {
-        font-size: 12px;
-        padding: 6px 12px;
-        min-height: 32px;
-    }
-}
-
-/* Đảm bảo không bị wrap trên các màn hình nhỏ */
-@media (max-width: 360px) {
-    .section-header-with-action h2 {
-        font-size: 15px;
-    }
-    
-    .section-header-with-action .btn {
-        font-size: 11px;
-        padding: 4px 8px;
-    }
-}
-
-/* FIX: CSS cho popup mua sắm vận hành */
-.popup-tabs {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 20px;
-    background: #f7fafc;
-    padding: 4px;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-}
-
-.popup-tab-btn {
-    flex: 1;
-    padding: 12px 8px;
-    border: none;
-    background: transparent;
-    color: #718096;
-    font-size: 13px;
-    font-weight: 500;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.popup-tab-btn.active {
-    background: white;
-    color: #667eea;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    font-weight: 600;
-}
-
-.popup-tab-content {
-    display: none;
-    animation: fadeIn 0.3s ease;
-}
-
-.popup-tab-content.active {
-    display: block;
-}
 
 /* Form styles cho popup */
 .form-group {
@@ -2022,59 +1858,6 @@ input, textarea, select {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-/* FIX: CSS làm đẹp nút bấm mua sắm vận hành */
-.operations-summary {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.operation-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
-    border-radius: 14px;
-    border: 2px solid #e2e8f0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-}
-
-.operation-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #667eea, #764ba2);
-}
-
-.operation-item:active {
-    transform: scale(0.98);
-    background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.operation-item span:first-child {
-    font-size: 20px;
-    color: #667eea;
-    font-weight: bold;
-    margin-right: 12px;
-}
-
-.operation-item span:last-child {
-    flex: 1;
-    font-weight: 600;
-    color: #2d3748;
-    font-size: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
 
 /* Hiệu ứng hover cho desktop */
 @media (hover: hover) {
@@ -3499,4 +3282,1163 @@ html .tab-btn {
     font-size: 18px;
     color: #666;
 }
+
+/* ===== FIX EMPLOYEE DETAIL POPUP FOR MOBILE ===== */
+.employee-detail-popup .popup {
+    max-width: 95vw;
+    max-height: 90vh;
+    padding: 16px;
+    margin: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.employee-detail-popup .popup h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+    padding-right: 30px;
+    color: #2d3748;
+}
+
+.employee-detail-popup .close-popup {
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+}
+
+/* Form groups compact */
+.employee-detail-popup .form-group {
+    margin-bottom: 12px;
+}
+
+.employee-detail-popup .form-group label {
+    font-size: 13px;
+    margin-bottom: 4px;
+    color: #4a5568;
+    font-weight: 600;
+}
+
+.employee-detail-popup .form-group input {
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 40px;
+    border-radius: 8px;
+}
+
+/* Salary info compact */
+.employee-detail-popup .salary-info {
+    background: #f7fafc;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 12px 0;
+    border: 1px solid #e2e8f0;
+}
+
+.employee-detail-popup .salary-info p {
+    margin: 0;
+    font-size: 13px;
+    color: #4a5568;
+}
+
+/* Calendar section compact */
+.employee-detail-popup .section {
+    margin-bottom: 16px;
+    padding: 16px;
+}
+
+.employee-detail-popup .section h4 {
+    font-size: 15px;
+    margin-bottom: 12px;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Bonus/Penalty section - side by side on mobile */
+.employee-detail-popup .bonus-penalty-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.employee-detail-popup .bonus-penalty-section .input-group {
+    margin-bottom: 0;
+}
+
+.employee-detail-popup .bonus-penalty-section label {
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.employee-detail-popup .bonus-penalty-section input {
+    padding: 8px 10px;
+    font-size: 14px;
+    min-height: 36px;
+}
+
+/* Salary calculation compact */
+.employee-detail-popup .salary-calculation {
+    background: #f0fff4;
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid #c6f6d5;
+    margin: 16px 0;
+}
+
+.employee-detail-popup .salary-calculation p {
+    margin: 6px 0;
+    font-size: 13px;
+    color: #2d3748;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.employee-detail-popup .salary-calculation p strong {
+    color: #38a169;
+    font-size: 14px;
+}
+
+.employee-detail-popup .salary-calculation p:last-child {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #9ae6b4;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* Popup actions fixed at bottom */
+.employee-detail-popup .popup-actions {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding: 16px 0 8px;
+    margin-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.employee-detail-popup .popup-actions .btn {
+    min-height: 44px;
+    font-size: 14px;
+    border-radius: 10px;
+    margin: 0;
+}
+
+/* Calendar improvements */
+.employee-detail-popup .calendar {
+    gap: 2px;
+    margin: 8px 0;
+    padding: 4px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.employee-detail-popup .calendar-header {
+    margin-bottom: 2px;
+}
+
+.employee-detail-popup .calendar-day {
+    min-height: 28px;
+    font-size: 11px;
+    border-radius: 4px;
+}
+
+/* Legend for calendar */
+.calendar-legend {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 8px 0;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #718096;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid;
+}
+
+.legend-normal {
+    background: white;
+    border-color: #e2e8f0;
+}
+
+.legend-off {
+    background: #fed7d7;
+    border-color: #feb2b2;
+}
+
+.legend-overtime {
+    background: #c6f6d5;
+    border-color: #9ae6b4;
+}
+
+.legend-today {
+    background: white;
+    border: 2px solid #667eea;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .employee-detail-popup .popup {
+        padding: 12px;
+        max-height: 88vh;
+    }
+    
+    .employee-detail-popup .section {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .employee-detail-popup .bonus-penalty-section {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .employee-detail-popup .calendar-day {
+        min-height: 26px;
+        font-size: 10px;
+    }
+    
+    .employee-detail-popup .popup-actions {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    
+    .employee-detail-popup .popup-actions .btn {
+        min-height: 40px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 360px) {
+    .employee-detail-popup .popup {
+        padding: 10px;
+    }
+    
+    .employee-detail-popup .section {
+        padding: 10px;
+    }
+    
+    .employee-detail-popup .calendar-day {
+        min-height: 24px;
+        font-size: 9px;
+    }
+    
+    .calendar-legend {
+        gap: 8px;
+    }
+    
+    .legend-item {
+        font-size: 10px;
+    }
+}
+
+/* Ensure no horizontal scroll */
+.employee-detail-popup .popup,
+.employee-detail-popup .section,
+.employee-detail-popup .calendar {
+    overflow-x: hidden;
+}
+
+/* Hide scrollbar but keep functionality */
+.employee-detail-popup .popup::-webkit-scrollbar {
+    width: 4px;
+}
+
+.employee-detail-popup .popup::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.employee-detail-popup .popup::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.employee-detail-popup .popup::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* THÊM VÀO CUỐI style.css - FIX EMPLOYEE DETAIL LAYOUT */
+
+/* ===== FIX EMPLOYEE DETAIL INFO SECTION ===== */
+.employee-detail-popup .basic-info {
+    padding: 20px 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .info-row {
+    margin-bottom: 16px;
+}
+
+/* Dòng 1 - Single line */
+.employee-detail-popup .line.single {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 16px !important;
+    padding: 12px 16px !important;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%) !important;
+    border-radius: 12px !important;
+    border: 2px solid #e2e8f0 !important;
+    flex-direction: row !important;
+}
+
+/* Dòng 2 và 3 - Two columns */
+.employee-detail-popup .line {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 12px !important;
+}
+
+.employee-detail-popup .cell {
+    background: #f8f9fa !important;
+    padding: 14px 12px !important;
+    border-radius: 10px !important;
+    border: 2px solid #e2e8f0 !important;
+    text-align: center !important;
+    transition: all 0.2s ease !important;
+    display: block !important;
+}
+
+/* Labels và values */
+.employee-detail-popup .info-label {
+    font-size: 14px !important;
+    color: #718096 !important;
+    font-weight: 500 !important;
+    margin-bottom: 4px !important;
+    display: block !important;
+}
+
+.employee-detail-popup .info-value {
+    font-size: 15px !important;
+    color: #2d3748 !important;
+    font-weight: 700 !important;
+    display: block !important;
+}
+
+.employee-detail-popup .stat-label {
+    font-size: 11px !important;
+    color: #718096 !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    margin-bottom: 6px !important;
+    display: block !important;
+}
+
+.employee-detail-popup .stat-value {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    display: block !important;
+}
+
+/* Màu sắc cho các loại thống kê */
+.employee-detail-popup .cell:nth-child(1) .stat-value { /* NGÀY OFF */
+    color: #c53030 !important;
+}
+
+.employee-detail-popup .cell:nth-child(2) .stat-value { /* TĂNG CA */
+    color: #276749 !important;
+}
+
+/* Dòng 3 - THƯỞNG và PHẠT */
+.employee-detail-popup .line:nth-child(3) .cell:nth-child(1) .stat-value { /* THƯỞNG */
+    color: #276749 !important;
+}
+
+.employee-detail-popup .line:nth-child(3) .cell:nth-child(2) .stat-value { /* PHẠT */
+    color: #c53030 !important;
+}
+
+/* Lương thực nhận */
+.employee-detail-popup .actual-salary {
+    font-size: 24px !important;
+    font-weight: 800 !important;
+    color: #667eea !important;
+    text-align: center !important;
+    margin-top: 16px !important;
+    padding: 20px !important;
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%) !important;
+    border-radius: 16px !important;
+    border: 3px solid #9ae6b4 !important;
+    box-shadow: 0 4px 12px rgba(39, 103, 73, 0.15) !important;
+    display: block !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .employee-detail-popup .basic-info {
+        padding: 16px !important;
+    }
+    
+    .employee-detail-popup .line.single {
+        padding: 10px 12px !important;
+        margin-bottom: 12px !important;
+    }
+    
+    .employee-detail-popup .cell {
+        padding: 12px 8px !important;
+    }
+    
+    .employee-detail-popup .info-value {
+        font-size: 14px !important;
+    }
+    
+    .employee-detail-popup .stat-value {
+        font-size: 15px !important;
+    }
+    
+    .employee-detail-popup .actual-salary {
+        font-size: 20px !important;
+        padding: 16px !important;
+        margin-top: 12px !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .employee-detail-popup .line {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+    
+    .employee-detail-popup .line.single {
+        flex-direction: column !important;
+        gap: 8px !important;
+        text-align: center !important;
+    }
+}
+
+.exports-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.exports-history-table th {
+    background: #f5f5f5;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #ddd;
+}
+
+.exports-history-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.exports-history-table .export-quantity {
+    color: #d32f2f;
+    font-weight: bold;
+}
+
+.exports-history-table .export-stock {
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+.exports-history-table .export-time {
+    color: #666;
+}
+
+/* CSS cho tất cả các phần header clickable */
+.section-header-with-action {
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    transition: all 0.2s ease;
+}
+
+/* Đảm bảo toàn bộ khu vực header có thể click */
+.clickable-header {
+    width: 100%;
+    padding: 12px 16px;
+    margin: 0;
+    border: 2px solid transparent;
+    border-radius: 8px;
+}
+
+/* Hiệu ứng hover để người dùng biết có thể click */
+.clickable-header:hover {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Hiệu ứng khi active/click */
+.clickable-header:active {
+    background-color: #e9ecef;
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Đảm bảo các phần tử con trong header không chặn click */
+.clickable-header * {
+    pointer-events: none;
+}
+
+/* Style cho icon mũi tên toggle */
+.toggle-icon {
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.toggle-icon.rotated {
+    transform: rotate(180deg);
+}
+
+/* 📊 Specific styles for different sections */
+
+/* Lịch sử báo cáo */
+[data-action*="report"],
+[data-action*="history"] {
+    border-left: 4px solid #007bff;
+}
+
+[data-action*="report"]:hover,
+[data-action*="history"]:hover {
+    background-color: #f0f8ff;
+    border-left-color: #0056b3;
+}
+
+/* 📦 Kho hàng */
+[data-action*="inventory"],
+[data-action*="toggle-inventory"] {
+    border-left: 4px solid #28a745;
+}
+
+[data-action*="inventory"]:hover,
+[data-action*="toggle-inventory"]:hover {
+    background-color: #f8fff9;
+    border-left-color: #1e7e34;
+}
+
+/* 🛒 Mua sắm */
+[data-action*="purchase"],
+[data-action*="shopping"] {
+    border-left: 4px solid #ffc107;
+}
+
+[data-action*="purchase"]:hover,
+[data-action*="shopping"]:hover {
+    background-color: #fffef0;
+    border-left-color: #e0a800;
+}
+
+/* 🗓️ Lịch/Date picker */
+[data-action*="date"],
+[data-action*="calendar"] {
+    border-left: 4px solid #6f42c1;
+}
+
+[data-action*="date"]:hover,
+[data-action*="calendar"]:hover {
+    background-color: #f8f9ff;
+    border-left-color: #563d7c;
+}
+
+/* Operations History Full Layout */
+.operations-history-full {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.operations-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 12px 16px;
+    border-bottom: 2px solid #5a6bc0;
+}
+
+.header-row {
+    display: grid;
+    grid-template-columns: 100px 1fr 1.5fr 100px 140px;
+    gap: 12px;
+    align-items: center;
+    font-weight: 600;
+    color: white;
+    font-size: 0.9em;
+}
+
+.operations-body {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.operation-record {
+    display: grid;
+    grid-template-columns: 100px 1fr 1.5fr 100px 140px;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f3f4;
+    align-items: start;
+    transition: all 0.2s ease;
+}
+
+.operation-record:hover {
+    background-color: #f8f9fa;
+    transform: translateX(2px);
+}
+
+.operation-record:last-child {
+    border-bottom: none;
+}
+
+/* Column Styles */
+.col-date .date-display {
+    font-size: 0.85em;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.col-product .product-name {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 4px;
+}
+
+.col-product .product-category {
+    font-size: 0.75em;
+    color: #6c757d;
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+.col-product .product-code {
+    font-size: 0.75em;
+    color: #868e96;
+    margin-top: 2px;
+}
+
+.col-content .content-text {
+    font-size: 0.9em;
+    line-height: 1.4;
+    color: #495057;
+    margin-bottom: 4px;
+}
+
+.col-content .supplier {
+    font-size: 0.8em;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.col-quantity {
+    text-align: center;
+}
+
+.col-quantity .quantity-display {
+    font-weight: 600;
+    color: #495057;
+    font-size: 1em;
+}
+
+.col-quantity .unit {
+    font-size: 0.8em;
+    color: #6c757d;
+    margin-top: 2px;
+}
+
+.col-amount {
+    text-align: right;
+}
+
+.col-amount .amount-display {
+    font-weight: 700;
+    color: #dc3545;
+    font-size: 1em;
+}
+
+.col-amount .unit-price {
+    font-size: 0.75em;
+    color: #868e96;
+    margin-top: 2px;
+}
+
+.operations-footer {
+    background: #f8f9fa;
+    padding: 16px;
+    border-top: 2px solid #e9ecef;
+}
+
+.total-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95em;
+}
+
+.total-amount {
+    color: #dc3545;
+    font-weight: 700;
+}
+
+.total-records {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    background: white;
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.error-state {
+    background: #fff5f5;
+    border: 1px solid #feb2b2;
+    color: #c53030;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .operations-history-full {
+        font-size: 0.85em;
+    }
+    
+    .header-row,
+    .operation-record {
+        grid-template-columns: 80px 1fr 80px 100px;
+        gap: 8px;
+    }
+    
+    .col-content {
+        display: none;
+    }
+    
+    .total-summary {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+    
+    .operations-header {
+        padding: 10px 12px;
+    }
+    
+    .operation-record {
+        padding: 10px 12px;
+    }
+}
+
+/* Scrollbar Styling */
+.operations-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.operations-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.operations-body::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.operations-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Thêm vào cuối CSS để đảm bảo cuộn mượt */
+.operations-timeline {
+    /* Đảm bảo hardware acceleration */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    
+    /* Cuộn mượt */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    
+    /* Ngăn chặn scroll choppy */
+    will-change: transform;
+    backface-visibility: hidden;
+    perspective: 1000;
+}
+
+
+/* Operations History - Simple Flat Design */
+.operations-history-full {
+    max-width: 100%;
+}
+
+.operations-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.summary-item {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.summary-item span {
+    display: block;
+    color: #6c757d;
+    font-size: 0.9em;
+    margin-bottom: 4px;
+}
+
+.summary-item strong {
+    display: block;
+    color: #dc3545;
+    font-size: 1.2em;
+    font-weight: 700;
+}
+
+.operations-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.date-group {
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.date-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #e9ecef;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.date-group-header h4 {
+    margin: 0;
+    font-size: 1em;
+    font-weight: 600;
+    color: #495057;
+}
+
+.daily-total {
+    font-weight: 700;
+    color: #dc3545;
+    font-size: 1em;
+}
+
+.date-group-operations {
+    padding: 0;
+}
+
+.operation-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.operation-item:last-child {
+    border-bottom: none;
+}
+
+/* Dòng 1: Loại và Tên */
+.operation-row-1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.operation-type {
+    font-size: 1.1em;
+    flex-shrink: 0;
+}
+
+.operation-name {
+    font-weight: 600;
+    color: #212529;
+    flex: 1;
+}
+
+/* Dòng 2: Số lượng và Thành tiền */
+.operation-row-2 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.operation-quantity {
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.operation-amount {
+    font-weight: 700;
+    color: #dc3545;
+    font-size: 1em;
+}
+
+.operation-description {
+    color: #6c757d;
+    font-size: 0.85em;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: #6c757d;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 1em;
+}
+
+/* Scrollbar đơn giản */
+.operations-timeline::-webkit-scrollbar {
+    width: 6px;
+}
+
+.operations-timeline::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.operations-timeline::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .operations-summary {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .summary-item {
+        padding: 10px;
+    }
+    
+    .date-group-header {
+        padding: 8px 10px;
+    }
+    
+    .operation-item {
+        padding: 8px 10px;
+    }
+    
+    .operations-timeline {
+        max-height: 400px;
+    }
+}
+/* Expenses & Transfers Popup Styles */
+.popup {
+    max-width: 600px;
+    width: 90%;
+}
+
+.add-expense-form,
+.add-transfer-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.expense-input-container,
+.transfer-input-container {
+    flex: 1;
+    min-width: 200px;
+}
+
+.add-expense-form input,
+.add-transfer-form input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.add-expense-form input:focus,
+.add-transfer-form input:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    background: white;
+}
+
+.data-table th {
+    background: #f8f9fa;
+    padding: 10px;
+    text-align: left;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+}
+
+.data-table td {
+    padding: 10px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.data-table tr:hover {
+    background: #f8f9fa;
+}
+
+.section-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.section-total strong:last-child {
+    color: #dc3545;
+    font-size: 1.1em;
+}
+
+.transfer-note {
+    margin: -10px 0 15px 0;
+    padding: 8px 12px;
+    background: #e7f3ff;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+}
+
+.transfer-note small {
+    color: #0066cc;
+}
+
+/* Datalist styling */
+.expense-input-container,
+.transfer-input-container {
+    position: relative;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .add-expense-form,
+    .add-transfer-form {
+        flex-direction: column;
+    }
+    
+    .expense-input-container,
+    .transfer-input-container {
+        min-width: auto;
+    }
+    
+    .data-table {
+        font-size: 14px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 8px 6px;
+    }
+}
+
+/* Button styles */
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid #007bff;
+    color: #007bff;
+}
+
+.btn-outline:hover {
+    background: #007bff;
+    color: white;
+}
+
 

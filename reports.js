@@ -21,42 +21,6 @@ function toggleOperationsHistory() {
 }
 
 
-// FIX: Sửa hàm renderOperationsHistory - thêm try-catch và log
-async function renderOperationsHistory() {
-    try {
-        console.log('🛒 Loading operations history...');
-        const operations = await dbGetAll('operations');
-        console.log('🛒 Raw operations data:', operations);
-        
-        const sortedOps = operations.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 20);
-        console.log('🛒 Sorted operations:', sortedOps);
-        
-        if (sortedOps.length === 0) {
-            return '<div class="empty-state"><p>📭 Chưa có giao dịch mua sắm nào</p></div>';
-        }
-        
-        let historyHTML = '';
-        
-        sortedOps.forEach((op, index) => {
-            console.log(`🛒 Operation ${index}:`, op);
-            historyHTML += `
-                <div class="operation-history-item">
-                    <span class="op-icon">${op.type === 'material' ? '🛒' : '🔧'}</span>
-                    <span class="op-name">${op.name || 'Không có tên'}</span>
-                    <span class="op-amount">${formatCurrency(op.amount || 0)}</span>
-                    ${op.quantity ? `<span class="op-quantity">${op.quantity} ${op.unit || ''}</span>` : ''}
-                </div>
-            `;
-        });
-        
-        console.log('🛒 Generated HTML length:', historyHTML.length);
-        return `<div class="operations-history">${historyHTML}</div>`;
-        
-    } catch (error) {
-        console.error('❌ Error loading operations history:', error);
-        return '<div class="empty-state"><p>❌ Lỗi tải lịch sử mua sắm</p></div>';
-    }
-}
 // FIX: Sửa hàm toggleInventoryList - đảm bảo reload đúng
 function toggleInventoryList() {
     showInventoryList = !showInventoryList;
@@ -241,115 +205,8 @@ function handleReportsInput(e) {
     }
 }
 
-// FIX: Thêm hàm hiển thị lịch sử xuất kho từ inventory.js
-async function showExportsHistoryPopup() {
-    try {
-        // Lấy tất cả lịch sử xuất kho
-        const allHistory = await dbGetAll('inventoryHistory');
-        const exportsHistory = allHistory.filter(record => 
-            record.type === 'out' && record.date.includes(currentReportDate)
-        );
-        
-        console.log('📦 Exports history for today:', exportsHistory);
-        
-        if (exportsHistory.length === 0) {
-            showMessage('📭 Không có lịch sử xuất kho cho ngày hôm nay', 'info');
-            return;
-        }
-        
-        // Lấy thông tin sản phẩm để hiển thị tên
-        const inventory = await dbGetAll('inventory');
-        
-        const popupHTML = `
-            <div class="popup" style="max-width: 800px;">
-                <button class="close-popup" data-action="close-popup">×</button>
-                <h3>📦 Lịch sử Xuất kho - ${formatDateDisplay(currentReportDate)}</h3>
-                
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Tên sản phẩm</th>
-                            <th>Thời gian</th>
-                            <th>SL xuất</th>
-                            <th>Đơn giá</th>
-                            <th>Thành tiền</th>
-                            <th>Ghi chú</th>
-                            <th>NV thực hiện</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${exportsHistory.map((record, index) => {
-                            const product = inventory.find(p => p.productId === record.productId);
-                            const productName = product ? product.name : 'Unknown';
-                            
-                            return `
-                                <tr>
-                                    <td>${index + 1}</td>
-                                    <td>${productName}</td>
-                                    <td>${formatDateTime(record.date)}</td>
-                                    <td style="color: red;">-${record.quantity}</td>
-                                    <td>${record.unitPrice ? formatCurrency(record.unitPrice) : '-'}</td>
-                                    <td>${record.totalPrice ? formatCurrency(record.totalPrice) : '-'}</td>
-                                    <td>${record.note || ''}</td>
-                                    <td>${record.createdBy || 'System'}</td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
-                
-                <div class="export-summary">
-                    <strong>Tổng xuất: ${exportsHistory.reduce((sum, record) => sum + record.quantity, 0)} sản phẩm</strong>
-                </div>
-                
-                <div class="popup-actions">
-                    <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
-                </div>
-            </div>
-        `;
-        
-        showPopup(popupHTML);
-        
-    } catch (error) {
-        console.error('Error loading exports history:', error);
-        showMessage('❌ Lỗi khi tải lịch sử xuất kho', 'error');
-    }
-}
-// FIX: Copy trực tiếp từ tab Kho
-async function getExportsHistoryForDate(date) {
-    try {
-        // Lấy TẤT CẢ history
-        const allHistory = await dbGetAll('inventoryHistory');
-        
-        // Lấy thông tin sản phẩm
-        const inventory = await dbGetAll('inventory');
-        
-        // Lọc và map giống tab Kho
-        const exportsHistory = allHistory
-            .filter(record => {
-                // Lọc theo type='out' và ngày
-                if (record.type !== 'out') return false;
-                
-                const recordDate = record.date ? record.date.split('T')[0] : '';
-                return recordDate === date;
-            })
-            .map(record => {
-                const product = inventory.find(p => p.productId === record.productId);
-                return {
-                    ...record,
-                    product: product
-                };
-            });
-        
-        console.log('📋 Exports history for', date, ':', exportsHistory.length, 'records');
-        return exportsHistory;
-        
-    } catch (error) {
-        console.error('Error getting exports history:', error);
-        return [];
-    }
-}
+
+
 
 // FIX: Hàm format thời gian
 function formatTime(dateString) {
@@ -423,11 +280,11 @@ async function renderReportsTab(container, report) {
             </div>
         </div>
 
-        <!-- PHẦN XUẤT KHO - HIỆN TẠI -->
+                <!-- PHẦN XUẤT KHO - HIỆN TẠI -->
         <div class="section">
-            <div class="section-header-with-action">
+            <div class="section-header-with-action clickable-header" data-action="toggle-inventory-list">
                 <h2>📦 Kho hàng</h2>
-                <button class="btn btn-outline btn-sm" data-action="toggle-inventory-list">
+                <button class="btn btn-outline btn-sm">
                    ${showInventoryList ? '👁‍🗨' : '👁'}
                 </button>
             </div>
@@ -451,17 +308,16 @@ async function renderReportsTab(container, report) {
             ` : ''}
 
             <div class="export-total">
-                <strong>Tổng xuất kho hiện tại: ${totalExports} sản phẩm</strong>
+                <strong>${totalExports} sản phẩm chờ xuất kho</strong>
+            </div>
+            <div class="exports-history-total">
+                <strong>Tổng: ${totalHistoricalExports} sản phẩm đã xuất kho</strong>
             </div>
         </div>
 
         <!-- PHẦN XUẤT KHO - LỊCH SỬ ĐÃ LƯU -->
         ${hasExportsHistory ? `
             <div class="section">
-                <div class="section-header-with-action">
-                    <h2>📋 Lịch sử Xuất kho đã lưu</h2>
-                </div>
-                
                 <div class="exports-history-section">
                     <div class="exports-history-list">
                         ${exportsHistory.map(record => {
@@ -494,11 +350,10 @@ async function renderReportsTab(container, report) {
                 </div>
             </div>
         </div>
-
         <!-- PHẦN LỊCH SỬ BÁO CÁO -->
         <div class="section">
             <div class="section-header-with-action">
-                <h2>📜 Lịch sử Báo cáo</h2>
+                <h2 class="clickable-section-header" data-action="toggle-reports-history">📜 Lịch sử Báo cáo</h2>
                 <button class="btn btn-outline btn-sm" data-action="toggle-reports-history">
                     ${showReportsHistory ? '👁‍🗨' : '👁'}
                 </button>
@@ -509,7 +364,7 @@ async function renderReportsTab(container, report) {
         <!-- PHẦN LỊCH SỬ MUA SẮM -->
         <div class="section">
             <div class="section-header-with-action">
-                <h2>🛒 Lịch sử Mua sắm</h2>
+                <h2 class="clickable-section-header" data-action="toggle-operations-history">🛒 Lịch sử Mua sắm</h2>
                 <button class="btn btn-outline btn-sm" data-action="toggle-operations-history">
                     ${showOperationsHistory ? '👁‍🗨' : '👁'}
                 </button>
@@ -773,58 +628,7 @@ function setupTransfersEventListeners() {
     document.addEventListener('click', handleTransfersClick);
 }
 
-// HÀM CHÍNH: HIỂN THỊ POPUP MUA SẮM VẬN HÀNH
-function showOperationsPopup(type = 'material') {
-    const popupHTML = `
-        <div class="popup" style="max-width: 500px;">
-            <button class="close-popup" data-action="close-popup">×</button>
-            <h3>🔧 Mua sắm Vận hành</h3>
-            
-            <div class="popup-tabs">
-                <button class="popup-tab-btn" data-tab="materialTab" id="materialTabBtn">🛒 Nguyên liệu / Hàng hóa</button>
-                <button class="popup-tab-btn" data-tab="serviceTab">📝 Dịch vụ / Chi phí khác</button>
-            </div>
 
-            <div id="materialTab" class="popup-tab-content">
-                <div class="form-group">
-                    <label>Tên / Mô tả:</label>
-                    <input type="text" id="materialName" placeholder="Tên nguyên liệu/hàng hóa">
-                </div>
-                <div class="form-group">
-                    <label>Số lượng:</label>
-                    <input type="number" id="materialQuantity" placeholder="Số lượng" min="0">
-                </div>
-                <div class="form-group">
-                    <label>Đơn vị (vd: kg, gói):</label>
-                    <input type="text" id="materialUnit" placeholder="Đơn vị">
-                </div>
-                <div class="form-group">
-                    <label>Thành tiền (tổng):</label>
-                    <input type="number" id="materialAmount" placeholder="Thành tiền" min="0">
-                </div>
-                <button class="btn btn-primary" data-action="save-material" style="width: 100%;"> Lưu - Cập nhật kho </button>
-            </div>
-
-            <div id="serviceTab" class="popup-tab-content">
-                <div class="form-group">
-                    <label>Tên dịch vụ / Chi phí:</label>
-                    <input type="text" id="serviceName" placeholder="Tên dịch vụ/chi phí">
-                </div>
-                <div class="form-group">
-                    <label>Số tiền:</label>
-                    <input type="number" id="serviceAmount" placeholder="Số tiền" min="0">
-                </div>
-                <button class="btn btn-primary" data-action="save-service" style="width: 100%;"> Lưu </button>
-            </div>
-            
-            <div class="popup-actions">
-                <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
-            </div>
-        </div>
-    `;
-    showPopup(popupHTML);
-    setupOperationsEventListeners(type); // Gọi setup với loại tab ban đầu
-}
 
 // HÀM SỬA LỖI CHÍNH: SETUP LISTENERS CHO POPUP MUA SẮM VẬN HÀNH (Đảm bảo cleanup)
 function setupOperationsEventListeners(initialTab) {
@@ -1218,74 +1022,7 @@ async function saveCurrentReport() {
     }
 }
     */
-   // FIX: Sửa hàm saveCurrentReport - lưu tất cả dữ liệu từ UI
-async function saveCurrentReport() {
-    if (!currentReport) return;
-    
-    try {
-        console.log('💾 saveCurrentReport called - Saving all data to DB');
-        
-        // LẤY DỮ LIỆU TỪ UI INPUTS
-        const revenueInput = document.getElementById('revenueInput');
-        const closingBalanceInput = document.getElementById('closingBalanceInput');
-        
-        if (revenueInput && closingBalanceInput) {
-            const revenue = parseFloat(revenueInput.value) || 0;
-            const closingBalance = parseFloat(closingBalanceInput.value) || 0;
-            
-            console.log('📊 Saving data - Revenue:', revenue, 'Closing Balance:', closingBalance);
-            
-            // CẬP NHẬT CURRENT REPORT VỚI DỮ LIỆU MỚI NHẤT
-            currentReport.revenue = revenue;
-            currentReport.closingBalance = closingBalance;
-            
-            // ĐẢM BẢO exports tồn tại
-            if (!currentReport.exports) {
-                currentReport.exports = [];
-            }
-            
-            // LƯU TẤT CẢ VÀO DATABASE
-            await dbUpdate('reports', currentReport.reportId, {
-                revenue: revenue,
-                closingBalance: closingBalance,
-                expenses: currentReport.expenses || [],
-                transfers: currentReport.transfers || [],
-                exports: currentReport.exports || [],
-                updatedBy: getCurrentUser().employeeId,
-                updatedAt: new Date().toISOString()
-            });
-            
-            console.log('✅ All data saved to database');
-            
-            // CẬP NHẬT SỐ DƯ ĐẦU KỲ CHO NGÀY TIẾP THEO
-            await updateNextDayOpeningBalance(closingBalance, currentReportDate);
-            
-            // XỬ LÝ XUẤT KHO NẾU CÓ
-            if (currentReport.exports && currentReport.exports.length > 0) {
-                console.log('📦 Processing exports for inventory update...');
-                await updateInventoryFromExports();
-                
-                // RESET xuất kho sau khi lưu thành công
-                currentReport.exports = [];
-                await dbUpdate('reports', currentReport.reportId, {
-                    exports: [],
-                    updatedAt: new Date().toISOString()
-                });
-            }
-            
-            showMessage('✅ Đã lưu báo cáo thành công!', 'success');
-            
-            // Reload để hiển thị trạng thái mới
-            setTimeout(() => {
-                loadReportsTab();
-            }, 1000);
-        }
-        
-    } catch (error) {
-        console.error('❌ Error saving report:', error);
-        showMessage('❌ Lỗi khi lưu báo cáo: ' + error.message, 'error');
-    }
-}
+
 // FIX: Hàm debug để kiểm tra tất cả báo cáo
 async function debugAllReports() {
     try {
@@ -1326,108 +1063,6 @@ async function loadReportsTab() {
     }
 }
 
-// FIX: Sửa hàm updateInventoryFromExports - thêm debug chi tiết
-async function updateInventoryFromExports() {
-    try {
-        console.log('📦 Updating inventory from exports...');
-        console.log('Current exports:', currentReport.exports);
-        
-        if (!currentReport.exports || currentReport.exports.length === 0) {
-            console.log('📭 No exports to process');
-            return;
-        }
-        
-        for (const exportItem of currentReport.exports) {
-            console.log('🔄 Processing export:', exportItem);
-            
-            // Tìm sản phẩm trong kho
-            const product = await dbGet('inventory', exportItem.productId);
-            
-            if (product) {
-                console.log('🎯 Found product:', product.name, 'Stock:', product.currentQuantity);
-                
-                // Kiểm tra số lượng xuất có hợp lệ không
-                if (exportItem.quantity > product.currentQuantity) {
-                    console.log('❌ Not enough stock:', {
-                        product: product.name,
-                        stock: product.currentQuantity,
-                        export: exportItem.quantity
-                    });
-                    showMessage(`❌ Không đủ tồn kho cho ${product.name}. Tồn: ${product.currentQuantity}, Xuất: ${exportItem.quantity}`, 'error');
-                    continue;
-                }
-                
-                // Cập nhật số lượng tồn kho
-                const newQuantity = product.currentQuantity - exportItem.quantity;
-                const newTotalValue = newQuantity * product.averagePrice;
-                
-                console.log('📊 Updating inventory:', {
-                    product: product.name,
-                    oldQuantity: product.currentQuantity,
-                    newQuantity: newQuantity,
-                    exportQuantity: exportItem.quantity
-                });
-                
-                await dbUpdate('inventory', product.productId, {
-                    currentQuantity: newQuantity,
-                    totalValue: newTotalValue,
-                    updatedAt: new Date().toISOString()
-                });
-                
-                // Ghi lịch sử xuất kho
-                const historyRecord = {
-                    productId: product.productId,
-                    type: 'out',
-                    quantity: exportItem.quantity,
-                    unitPrice: product.averagePrice,
-                    totalPrice: exportItem.quantity * product.averagePrice,
-                    note: `Xuất kho bán hàng - NV: ${getCurrentUser().name} - Ngày: ${formatDateDisplay(currentReportDate)}`,
-                    createdBy: getCurrentUser().employeeId,
-                    date: new Date().toISOString()
-                };
-                
-                await dbAdd('inventoryHistory', historyRecord);
-                console.log('📝 Added export history record');
-                
-                console.log(`✅ Updated inventory for ${product.name}: -${exportItem.quantity}`);
-            } else {
-                console.warn(`❌ Product not found: ${exportItem.productId}`);
-                showMessage(`❌ Sản phẩm không tồn tại trong kho: ${exportItem.name}`, 'error');
-            }
-        }
-        
-        console.log('🎉 Finished processing all exports');
-        
-    } catch (error) {
-        console.error('❌ Error updating inventory from exports:', error);
-        throw error;
-    }
-}
-
-async function debugInventory() {
-    try {
-        console.log('=== 🐛 INVENTORY DEBUG ===');
-        
-        const inventory = await dbGetAll('inventory');
-        console.log('📦 Total inventory items:', inventory.length);
-        
-        inventory.forEach((item, index) => {
-            console.log(`${index + 1}. ${item.name}: ${item.currentQuantity} ${item.unit} - ${formatCurrency(item.totalValue)}`);
-        });
-        
-        const history = await dbGetAll('inventoryHistory');
-        console.log('📜 Total history records:', history.length);
-        
-        const recentHistory = history.slice(-5);
-        recentHistory.forEach((record, index) => {
-            console.log(`   ${record.type === 'in' ? '📥' : '📤'} ${record.date.split('T')[0]} - ${record.quantity} - ${record.note || ''}`);
-        });
-        
-        console.log('=== END DEBUG ===');
-    } catch (error) {
-        console.error('Error debugging inventory:', error);
-    }
-}
 
 async function renderExportsTable(currentExports) {
     try {
@@ -1462,90 +1097,7 @@ async function renderExportsTable(currentExports) {
     }
 }
 
-// FIX: Sửa hàm increaseExport với debug chi tiết
-async function increaseExport(productId) {
-    console.log('🎯 increaseExport CALLED with productId:', productId);
-    
-    if (!currentReport) {
-        console.error('❌ currentReport is null!');
-        return;
-    }
 
-    try {
-        const product = await dbGet('inventory', productId);
-        if (!product) {
-            console.error('❌ Product not found:', productId);
-            showMessage('❌ Sản phẩm không tồn tại.', 'error');
-            return;
-        }
-
-        console.log('📦 Product found:', product.name);
-        console.log('📊 Current exports BEFORE:', currentReport.exports);
-
-        // Kiểm tra tồn kho
-        const currentExport = currentReport.exports.find(exp => exp.productId === productId);
-        const exportedQuantity = currentExport ? currentExport.quantity : 0;
-
-        console.log('📈 Export info:', {
-            currentExport: currentExport,
-            exportedQuantity: exportedQuantity,
-            productStock: product.currentQuantity
-        });
-
-        if (exportedQuantity >= product.currentQuantity) {
-            console.log('❌ Not enough stock');
-            showMessage(`❌ Tồn kho chỉ còn ${product.currentQuantity} ${product.unit}. Không thể xuất thêm.`, 'error');
-            return;
-        }
-
-        let updatedExports = [...currentReport.exports];
-        let itemIndex = updatedExports.findIndex(exp => exp.productId === productId);
-
-        if (itemIndex > -1) {
-            // Tăng số lượng
-            updatedExports[itemIndex].quantity += 1;
-            console.log('📈 Increased existing export:', updatedExports[itemIndex]);
-        } else {
-            // Thêm mới
-            const newExport = {
-                productId: productId,
-                quantity: 1,
-                name: product.name,
-                unit: product.unit,
-                exportDate: currentReportDate,
-                createdAt: new Date().toISOString()
-            };
-            updatedExports.push(newExport);
-            console.log('🆕 Added new export:', newExport);
-        }
-        
-        // Cập nhật currentReport
-        currentReport.exports = updatedExports;
-        console.log('📦 Current exports AFTER:', currentReport.exports);
-
-        // Cập nhật database
-        console.log('💾 Saving to database...');
-        await dbUpdate('reports', currentReport.reportId, {
-            exports: updatedExports,
-            updatedBy: getCurrentUser().employeeId,
-            updatedAt: new Date().toISOString()
-        });
-        
-        console.log('✅ Database updated successfully');
-        
-        // Kiểm tra lại từ database
-        const reportFromDB = await dbGet('reports', currentReport.reportId);
-        console.log('🔄 Report from DB after update:', reportFromDB.exports);
-
-        // Tải lại tab
-        console.log('🔄 Reloading reports tab...');
-        loadReportsTab();
-
-    } catch (error) {
-        console.error('❌ Error in increaseExport:', error);
-        showMessage('❌ Lỗi khi tăng số lượng xuất kho', 'error');
-    }
-}
 
 // BỔ SUNG: Hàm giảm số lượng xuất kho (decreaseExport)
 async function decreaseExport(productId) {
@@ -1843,231 +1395,204 @@ function calculateTotalExports(report) {
     return report.exports.reduce((total, exportItem) => total + (exportItem.quantity || 0), 0);
 }
 
-async function calculateOperationsTotal(type, dateKey) {
-    try {
-        // Giả định dbGetAll('operations') trả về tất cả bản ghi
-        const operations = await dbGetAll('operations');
-        const total = operations
-            // Lọc theo loại (material/service) và ngày
-            .filter(op => op.type === type && op.dateKey === dateKey)
-            .reduce((sum, op) => sum + (op.amount || 0), 0);
-        return total;
-    } catch (error) {
-        console.error('Error calculating operations total:', error);
-        return 0;
-    }
-}
-
-async function saveMaterial() {
-    const name = document.getElementById('materialName').value.trim();
-    const quantity = parseFloat(document.getElementById('materialQuantity').value);
-    const unit = document.getElementById('materialUnit').value.trim();
-    const amount = parseFloat(document.getElementById('materialAmount').value);
-
-    if (!name || isNaN(quantity) || quantity <= 0 || isNaN(amount) || amount <= 0) {
-        showMessage('Vui lòng nhập đầy đủ Tên, Số lượng và Thành tiền hợp lệ.', 'error');
-        return;
-    }
-
-    try {
-        const currentUser = getCurrentUser();
-        const operationId = generateOperationId();
-        const isoDate = new Date().toISOString();
-        const dateKey = currentReportDate; // YYYY-MM-DD
-
-        // 1. Tạo Operation Record
-        const operationRecord = {
-            operationId: operationId,
-            date: isoDate,
-            dateKey: dateKey,
-            type: 'material',
-            name: name,
-            quantity: quantity,
-            unit: unit,
-            amount: amount,
-            createdBy: currentUser.employeeId,
-            createdAt: isoDate
-        };
-
-        await dbAdd('operations', operationRecord);
-
-        // 2. Cập nhật Kho hàng (giả định store 'inventory' và 'inventoryHistory' tồn tại)
-        
-        // Tìm sản phẩm theo tên
-        const inventoryItems = await dbGetAll('inventory');
-        let product = inventoryItems.find(p => p.name.toLowerCase() === name.toLowerCase());
-        
-        if (!product) {
-             // Tạo sản phẩm mới nếu chưa có
-             const newProductId = 'prod_' + Math.random().toString(36).substring(2, 9);
-             product = {
-                 productId: newProductId,
-                 name: name,
-                 unit: unit,
-                 currentQuantity: 0,
-                 minStock: 0,
-                 averagePrice: 0,
-                 totalValue: 0
-             };
-             await dbAdd('inventory', product);
-        }
-
-        // Tạo bản ghi lịch sử nhập kho
-        const historyRecord = {
-            productId: product.productId,
-            type: 'in', // Loại nhập kho
-            quantity: quantity,
-            unitPrice: amount / quantity,
-            totalPrice: amount,
-            note: `Mua sắm vận hành: ${name}`,
-            createdBy: currentUser.employeeId,
-            date: isoDate
-        };
-        await dbAdd('inventoryHistory', historyRecord);
-        
-        // Cập nhật tồn kho và giá trị
-        const totalQuantityBefore = product.currentQuantity;
-        const totalValueBefore = product.totalValue;
-        
-        const newTotalQuantity = totalQuantityBefore + quantity;
-        const newTotalValue = totalValueBefore + amount;
-        
-        // Tính lại giá trung bình
-        const newAveragePrice = newTotalQuantity > 0 ? newTotalValue / newTotalQuantity : 0;
-        
-        await dbUpdate('inventory', product.productId, {
-            currentQuantity: newTotalQuantity,
-            totalValue: newTotalValue,
-            averagePrice: newAveragePrice,
-            updatedAt: isoDate
-        });
-
-
-        showMessage('✅ Đã lưu mua sắm Nguyên liệu và cập nhật kho', 'success');
-        closePopup();
-        loadReportsTab();
-
-    } catch (error) {
-        console.error('Error saving material operation:', error);
-        showMessage('❌ Lỗi khi lưu mua sắm Nguyên liệu', 'error');
-    }
-}
-async function saveService() {
-    const name = document.getElementById('serviceName').value.trim();
-    const amount = parseFloat(document.getElementById('serviceAmount').value);
-
-    if (!name || isNaN(amount) || amount <= 0) {
-        showMessage('Vui lòng nhập đầy đủ Tên Dịch vụ và Số tiền hợp lệ.', 'error');
-        return;
-    }
-
-    try {
-        const currentUser = getCurrentUser();
-        const operationId = generateOperationId();
-        const isoDate = new Date().toISOString();
-        const dateKey = currentReportDate; // YYYY-MM-DD
-
-        // 1. Tạo Operation Record
-        const operationRecord = {
-            operationId: operationId,
-            date: isoDate,
-            dateKey: dateKey,
-            type: 'service',
-            name: name,
-            quantity: 0,
-            unit: '',
-            amount: amount,
-            createdBy: currentUser.employeeId,
-            createdAt: isoDate
-        };
-
-        await dbAdd('operations', operationRecord);
-
-        showMessage('✅ Đã lưu mua sắm Dịch vụ', 'success');
-        closePopup();
-        loadReportsTab();
-
-    } catch (error) {
-        console.error('Error saving service operation:', error);
-        showMessage('❌ Lỗi khi lưu mua sắm Dịch vụ', 'error');
-    }
-}
-
-// FIX: Sửa hàm showExpensesPopup - thêm dropdown autocomplete
+// FIX: Sửa hàm showExpensesPopup - thêm dropdown autocomplete và sắp xếp
 async function showExpensesPopup() {
     if (!currentReport) return;
     
-    // Lấy danh sách chi phí từ lịch sử
-    const allReports = await dbGetAll('reports');
-    const expenseHistory = new Set();
-    
-    allReports.forEach(report => {
-        if (report.expenses && Array.isArray(report.expenses)) {
-            report.expenses.forEach(expense => {
-                if (expense.name && expense.name.trim()) {
-                    expenseHistory.add(expense.name.trim());
-                }
-            });
-        }
-    });
-    
-    const expenseSuggestions = Array.from(expenseHistory).slice(0, 10); // Giới hạn 10 đề xuất
-    
-    const popupHTML = `
-        <div class="popup">
-            <button class="close-popup" data-action="close-popup">×</button>
-            <h3>💰 Quản lý Chi phí - ${formatDateDisplay(currentReport.date)}</h3>
-            
-            <div class="add-expense-form">
-                <div class="expense-input-container">
-                    <input type="text" id="expenseName" placeholder="Tìm hoặc nhập tên chi phí" 
-                           list="expenseSuggestions" autocomplete="off">
-                    <datalist id="expenseSuggestions">
-                        ${expenseSuggestions.map(expense => `
-                            <option value="${expense}">${expense}</option>
-                        `).join('')}
-                    </datalist>
+    try {
+        // Lấy danh sách chi phí từ lịch sử
+        const allReports = await dbGetAll('reports');
+        const expenseHistory = new Set();
+        
+        allReports.forEach(report => {
+            if (report.expenses && Array.isArray(report.expenses)) {
+                report.expenses.forEach(expense => {
+                    if (expense.name && expense.name.trim()) {
+                        expenseHistory.add(expense.name.trim());
+                    }
+                });
+            }
+        });
+        
+        const expenseSuggestions = Array.from(expenseHistory).slice(0, 10);
+        
+        // Sắp xếp chi phí hiện tại - mới nhất lên đầu
+        const sortedExpenses = currentReport.expenses ? 
+            [...currentReport.expenses].sort((a, b) => {
+                const dateA = new Date(a.createdAt || a.date || Date.now());
+                const dateB = new Date(b.createdAt || b.date || Date.now());
+                return dateB - dateA;
+            }) : [];
+        
+        const popupHTML = `
+            <div class="popup">
+                <button class="close-popup" data-action="close-popup">×</button>
+                <h3>💰 Quản lý Chi phí - ${formatDateDisplay(currentReport.date)}</h3>
+                
+                <div class="add-expense-form">
+                    <div class="expense-input-container">
+                        <input type="text" id="expenseName" placeholder="Tìm hoặc nhập tên chi phí" 
+                               list="expenseSuggestions" autocomplete="off">
+                        <datalist id="expenseSuggestions">
+                            ${expenseSuggestions.map(expense => `
+                                <option value="${expense}">${expense}</option>
+                            `).join('')}
+                        </datalist>
+                    </div>
+                    <input type="number" id="expenseAmount" placeholder="Số tiền" min="0">
+                    <button class="btn btn-primary" data-action="add-expense">Thêm</button>
                 </div>
-                <input type="number" id="expenseAmount" placeholder="Số tiền" min="0">
-                <button class="btn btn-primary" data-action="add-expense">Thêm</button>
-            </div>
-            
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Tên chi phí</th>
-                        <th>Số tiền</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody id="expensesList">
-                    ${currentReport.expenses.map(expense => `
+                
+                <table class="data-table">
+                    <thead>
                         <tr>
-                            <td>${expense.name}</td>
-                            <td>${formatCurrency(expense.amount)}</td>
-                            <td>
-                                <button class="btn btn-danger btn-sm" 
-                                        data-action="delete-expense" 
-                                        data-id="${expense.expenseId}">Xóa</button>
-                            </td>
+                            <th>Tên chi phí</th>
+                            <th>Số tiền</th>
+                            <th>Thao tác</th>
                         </tr>
-                    `).join('')}
-                    ${currentReport.expenses.length === 0 ? `
-                        <tr>
-                            <td colspan="3" style="text-align: center; color: #666;">Chưa có chi phí nào</td>
-                        </tr>
-                    ` : ''}
-                </tbody>
-            </table>
-            
-            <div class="popup-actions">
-                <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
+                    </thead>
+                    <tbody id="expensesList">
+                        ${sortedExpenses.map(expense => `
+                            <tr>
+                                <td>${expense.name}</td>
+                                <td>${formatCurrency(expense.amount)}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" 
+                                            data-action="delete-expense" 
+                                            data-id="${expense.expenseId}">Xóa</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                        ${sortedExpenses.length === 0 ? `
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #666;">Chưa có chi phí nào</td>
+                            </tr>
+                        ` : ''}
+                    </tbody>
+                </table>
+                
+                ${sortedExpenses.length > 0 ? `
+                <div class="section-total">
+                    <strong>Tổng chi phí:</strong>
+                    <strong>${formatCurrency(sortedExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0))}</strong>
+                </div>
+                ` : ''}
+                
+                <div class="popup-actions">
+                    <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+        
+        showPopup(popupHTML);
+        setupExpensesEventListeners();
+        
+    } catch (error) {
+        console.error('Error showing expenses popup:', error);
+        showMessage('Lỗi tải popup chi phí', 'error');
+    }
+}
+
+// FIX: Sửa hàm showTransfersPopup - sắp xếp và fix lỗi
+async function showTransfersPopup() {
+    if (!currentReport) return;
     
-    showPopup(popupHTML);
-    setupExpensesEventListeners();
+    try {
+        // Lấy danh sách nội dung từ lịch sử
+        const allReports = await dbGetAll('reports');
+        const transferHistory = new Set();
+        
+        allReports.forEach(report => {
+            if (report.transfers && Array.isArray(report.transfers)) {
+                report.transfers.forEach(transfer => {
+                    if (transfer.content && transfer.content.trim()) {
+                        transferHistory.add(transfer.content.trim());
+                    }
+                });
+            }
+        });
+        
+        const transferSuggestions = Array.from(transferHistory).slice(0, 10);
+        
+        // Sắp xếp chuyển khoản hiện tại - mới nhất lên đầu
+        const sortedTransfers = currentReport.transfers ? 
+            [...currentReport.transfers].sort((a, b) => {
+                const dateA = new Date(a.createdAt || a.date || Date.now());
+                const dateB = new Date(b.createdAt || b.date || Date.now());
+                return dateB - dateA;
+            }) : [];
+        
+        const popupHTML = `
+            <div class="popup">
+                <button class="close-popup" data-action="close-popup">×</button>
+                <h3>🏦 Quản lý Chuyển khoản - ${formatDateDisplay(currentReport.date)}</h3>
+                
+                <div class="add-transfer-form">
+                    <div class="transfer-input-container">
+                        <input type="text" id="transferContent" placeholder="Nội dung chuyển khoản" 
+                               list="transferSuggestions" autocomplete="off">
+                        <datalist id="transferSuggestions">
+                            ${transferSuggestions.map(content => `
+                                <option value="${content}">${content}</option>
+                            `).join('')}
+                        </datalist>
+                    </div>
+                    <input type="number" id="transferAmount" placeholder="Số tiền" min="0">
+                    <button class="btn btn-primary" data-action="add-transfer">Thêm</button>
+                </div>
+                
+                <div class="transfer-note">
+                    <small>💡 Có thể nhập số tiền 0đ. Nếu không nhập nội dung sẽ tự động tạo.</small>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nội dung</th>
+                            <th>Số tiền</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transfersList">
+                        ${sortedTransfers.map(transfer => `
+                            <tr>
+                                <td>${transfer.content || 'Không có nội dung'}</td>
+                                <td>${formatCurrency(transfer.amount)}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" 
+                                            data-action="delete-transfer" 
+                                            data-id="${transfer.transferId}">Xóa</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                        ${sortedTransfers.length === 0 ? `
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #666;">Chưa có chuyển khoản nào</td>
+                            </tr>
+                        ` : ''}
+                    </tbody>
+                </table>
+                
+                ${sortedTransfers.length > 0 ? `
+                <div class="section-total">
+                    <strong>Tổng chuyển khoản:</strong>
+                    <strong>${formatCurrency(sortedTransfers.reduce((sum, trans) => sum + (trans.amount || 0), 0))}</strong>
+                </div>
+                ` : ''}
+                
+                <div class="popup-actions">
+                    <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
+                </div>
+            </div>
+        `;
+        
+        showPopup(popupHTML);
+        setupTransfersEventListeners();
+        
+    } catch (error) {
+        console.error('Error showing transfers popup:', error);
+        showMessage('Lỗi tải popup chuyển khoản', 'error');
+    }
 }
 
 
@@ -2141,86 +1666,7 @@ async function deleteExpense(expenseId) {
     }
 }
 
-// FIX: Sửa hàm showTransfersPopup - cho phép 0đ và tự động nội dung
-async function showTransfersPopup() {
-    if (!currentReport) return;
-    
-    // Lấy danh sách nội dung từ lịch sử
-    const allReports = await dbGetAll('reports');
-    const transferHistory = new Set();
-    
-    allReports.forEach(report => {
-        if (report.transfers && Array.isArray(report.transfers)) {
-            report.transfers.forEach(transfer => {
-                if (transfer.content && transfer.content.trim()) {
-                    transferHistory.add(transfer.content.trim());
-                }
-            });
-        }
-    });
-    
-    const transferSuggestions = Array.from(transferHistory).slice(0, 10);
-    
-    const popupHTML = `
-        <div class="popup">
-            <button class="close-popup" data-action="close-popup">×</button>
-            <h3>🏦 Quản lý Chuyển khoản - ${formatDateDisplay(currentReport.date)}</h3>
-            
-            <div class="add-transfer-form">
-                <div class="transfer-input-container">
-                    <input type="text" id="transferContent" placeholder="Nội dung chuyển khoản" 
-                           list="transferSuggestions" autocomplete="off">
-                    <datalist id="transferSuggestions">
-                        ${transferSuggestions.map(content => `
-                            <option value="${content}">${content}</option>
-                        `).join('')}
-                    </datalist>
-                </div>
-                <input type="number" id="transferAmount" placeholder="Số tiền" min="0">
-                <button class="btn btn-primary" data-action="add-transfer">Thêm</button>
-            </div>
-            
-            <div class="transfer-note">
-                <small>💡 Có thể nhập số tiền 0đ. Nếu không nhập nội dung sẽ tự động tạo.</small>
-            </div>
-            
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Nội dung</th>
-                        <th>Số tiền</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody id="transfersList">
-                    ${currentReport.transfers.map(transfer => `
-                        <tr>
-                            <td>${transfer.content || 'Không có nội dung'}</td>
-                            <td>${formatCurrency(transfer.amount)}</td>
-                            <td>
-                                <button class="btn btn-danger btn-sm" 
-                                        data-action="delete-transfer" 
-                                        data-id="${transfer.transferId}">Xóa</button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                    ${currentReport.transfers.length === 0 ? `
-                        <tr>
-                            <td colspan="3" style="text-align: center; color: #666;">Chưa có chuyển khoản nào</td>
-                        </tr>
-                    ` : ''}
-                </tbody>
-            </table>
-            
-            <div class="popup-actions">
-                <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
-            </div>
-        </div>
-    `;
-    
-    showPopup(popupHTML);
-    setupTransfersEventListeners();
-}
+
 
 // FIX: Sửa hàm addNewTransfer - cho phép 0đ và tự động nội dung
 async function addNewTransfer() {
@@ -2543,112 +1989,7 @@ function calculateTotalExports(report) {
     return total;
 }
 
-// FIX: Sửa hàm createDailyReportContent - thêm lịch sử xuất kho
-async function createDailyReportContent(reportData) {
-    console.log('🐛 createDailyReportContent - reportData:', reportData);
-    
-    const actualReceived = calculateActualReceived(reportData);
-    const totalExpenses = calculateTotalExpenses(reportData);
-    const totalTransfers = calculateTotalTransfers(reportData);
-    const totalExports = calculateTotalExports(reportData);
-    
-    // Lấy lịch sử xuất kho thực tế
-    const exportsHistory = await getExportsHistoryForDate(reportData.date);
-    const totalHistoricalExports = exportsHistory.reduce((sum, record) => sum + record.quantity, 0);
-    
-    let content = `📊 BÁO CÁO NGÀY ${formatDateDisplay(reportData.date)}\n\n`;
-    
-    content += `💰 Số dư đầu kỳ: ${formatCurrency(reportData.openingBalance)}\n`;
-    content += `📈 Doanh thu: ${formatCurrency(reportData.revenue)}\n`;
-    content += `💸 Chi phí: ${formatCurrency(totalExpenses)}\n`;
-    content += `🏦 Chuyển khoản: ${formatCurrency(totalTransfers)}\n`;
-    content += `💰 Số dư cuối kỳ: ${formatCurrency(reportData.closingBalance)}\n`;
-    content += `🎯 Thực nhận: ${formatCurrency(actualReceived)}\n\n`;
 
-    // Chi tiết chi phí
-    if (reportData.expenses && reportData.expenses.length > 0) {
-        content += `📋 CHI TIẾT CHI PHÍ:\n`;
-        reportData.expenses.forEach(expense => {
-            content += `   • ${expense.name}: ${formatCurrency(expense.amount)}\n`;
-        });
-        content += `\n`;
-    }
-
-    // Chi tiết chuyển khoản
-    if (reportData.transfers && reportData.transfers.length > 0) {
-        content += `🏦 CHI TIẾT CHUYỂN KHOẢN:\n`;
-        reportData.transfers.forEach(transfer => {
-            const contentText = transfer.content || 'Chuyển khoản';
-            content += `   • ${contentText}: ${formatCurrency(transfer.amount)}\n`;
-        });
-        content += `\n`;
-    }
-
-    // XUẤT KHO - HIỆN TẠI (chưa lưu)
-    console.log('📦 Processing current exports...');
-    
-    if (reportData.exports && reportData.exports.length > 0) {
-        const validExports = reportData.exports.filter(exp => exp.quantity > 0);
-        if (validExports.length > 0) {
-            content += `📦 XUẤT KHO HIỆN TẠI (${totalExports} sản phẩm):\n`;
-            
-            const inventory = await dbGetAll('inventory');
-            
-            for (const exportItem of validExports) {
-                console.log('   Processing export item:', exportItem);
-                
-                const product = inventory.find(p => p.productId === exportItem.productId);
-                const productName = product ? product.name : exportItem.name;
-                const productUnit = product ? product.unit : '';
-                
-                content += `   • ${productName}: ${exportItem.quantity} ${productUnit}\n`;
-                console.log(`   ✅ Added: ${productName} - ${exportItem.quantity} ${productUnit}`);
-            }
-            content += `\n`;
-        }
-    }
-
-    // XUẤT KHO - LỊCH SỬ (đã lưu)
-    console.log('📚 Processing exports history...');
-    
-    if (exportsHistory.length > 0) {
-        content += `📚 XUẤT KHO ĐÃ LƯU (${totalHistoricalExports} sản phẩm):\n`;
-        
-        // Nhóm theo sản phẩm để tổng hợp
-        const productExports = {};
-        exportsHistory.forEach(record => {
-            const productName = record.product?.name || 'Unknown';
-            if (!productExports[productName]) {
-                productExports[productName] = {
-                    quantity: 0,
-                    unit: record.product?.unit || ''
-                };
-            }
-            productExports[productName].quantity += record.quantity;
-        });
-        
-        // Hiển thị tổng hợp
-        Object.entries(productExports).forEach(([productName, data]) => {
-            content += `   • ${productName}: ${data.quantity} ${data.unit}\n`;
-        });
-        content += `\n`;
-    }
-
-    // TỔNG KẾT XUẤT KHO
-    const totalAllExports = totalExports + totalHistoricalExports;
-    if (totalAllExports > 0) {
-        content += `📊 TỔNG XUẤT KHO: ${totalAllExports} sản phẩm\n\n`;
-    } else {
-        content += `📦 XUẤT KHO: 0 sản phẩm\n\n`;
-    }
-
-    content += `-- Quản lý Cafe --`;
-
-    console.log('📄 FINAL REPORT CONTENT:');
-    console.log(content);
-    
-    return content;
-}
 function calculateTotalExpenses(report) {
     if (!report.expenses || !Array.isArray(report.expenses)) {
         return 0;
@@ -2882,3 +2223,1039 @@ async function copyReportToClipboard() {
         zaloIntegration.showNotification('❌ Lỗi khi copy báo cáo: ' + error.message, 'error');
     }
 }
+
+
+
+// FIX: Sửa hàm calculateOperationsTotal - tính theo ngày báo cáo
+async function calculateOperationsTotal(type, date = currentReportDate) {
+    try {
+        const operations = await dbGetAll('operations');
+        const total = operations
+            .filter(op => op.type === type && op.dateKey === date)
+            .reduce((sum, op) => sum + (op.amount || 0), 0);
+        return total;
+    } catch (error) {
+        console.error('Error calculating operations total:', error);
+        return 0;
+    }
+}
+
+// FIX: Hiển thị toàn bộ lịch sử mua sắm
+async function renderOperationsHistory() {
+    try {
+        console.log('🛒 Loading ALL operations history');
+        const operations = await dbGetAll('operations');
+        
+        console.log('🛒 ALL operations:', operations);
+        
+        if (operations.length === 0) {
+            return `
+                <div class="empty-state">
+                    <p>📭 Chưa có giao dịch mua sắm nào</p>
+                    <small>Thêm giao dịch mới để xem ở đây</small>
+                </div>
+            `;
+        }
+        
+        // Sắp xếp theo ngày mới nhất
+        const sortedOps = operations.sort((a, b) => {
+            const dateA = new Date(a.date || a.createdAt || a.dateKey);
+            const dateB = new Date(b.date || b.createdAt || b.dateKey);
+            return dateB - dateA; // Mới nhất lên đầu
+        });
+        
+        console.log('🛒 Sorted operations:', sortedOps);
+        
+        let historyHTML = '';
+        let currentDateGroup = null;
+        
+        for (const op of sortedOps) {
+            const opDate = convertToDisplayFormat(op.date || op.dateKey || op.createdAt);
+            
+            // Tạo nhóm theo ngày
+            if (opDate !== currentDateGroup) {
+                if (currentDateGroup !== null) {
+                    historyHTML += `</div>`; // Đóng nhóm ngày trước
+                }
+                
+                currentDateGroup = opDate;
+                const dailyOps = sortedOps.filter(item => 
+                    convertToDisplayFormat(item.date || item.dateKey || item.createdAt) === opDate
+                );
+                const dailyTotal = dailyOps.reduce((sum, item) => sum + (item.amount || item.total || 0), 0);
+                
+                historyHTML += `
+                    <div class="date-group">
+                        <div class="date-group-header">
+                            <h4>${opDate}</h4>
+                            <span class="daily-total">${formatCurrency(dailyTotal)}</span>
+                        </div>
+                        <div class="date-group-operations">
+                `;
+            }
+            
+            historyHTML += createOperationHTML(op);
+        }
+        
+        // Đóng nhóm cuối cùng
+        if (currentDateGroup !== null) {
+            historyHTML += `</div></div>`;
+        }
+        
+        const totalAmount = sortedOps.reduce((sum, op) => sum + (op.amount || op.total || 0), 0);
+        const totalCount = sortedOps.length;
+        
+        return `
+            <div class="operations-history-full">
+                <div class="operations-summary">
+                    <div class="summary-item">
+                        <span>Tổng giao dịch</span>
+                        <strong>${totalCount}</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Tổng chi phí</span>
+                        <strong>${formatCurrency(totalAmount)}</strong>
+                    </div>
+                </div>
+                
+                <div class="operations-timeline">
+                    ${historyHTML}
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('❌ Error loading operations history:', error);
+        return `
+            <div class="empty-state error-state">
+                <p>❌ Lỗi tải lịch sử mua sắm</p>
+                <small>${error.message}</small>
+            </div>
+        `;
+    }
+}
+
+function createOperationHTML(op) {
+    return `
+        <div class="operation-item" data-operation-id="${op.id}">
+            <!-- Dòng 1: Loại và Tên -->
+            <div class="operation-row-1">
+                <div class="operation-type">
+                    ${op.type === 'material' ? '🛒' : '🔧'}
+                </div>
+                <div class="operation-name">
+                    ${op.name || op.productName || 'Không có tên'}
+                </div>
+            </div>
+            
+          
+                <div class="operation-quantity">
+                    ${op.quantity || 1} ${op.unit || ''}
+                    ${op.unitPrice ? ` • ${formatCurrency(op.unitPrice)}` : ''}
+                </div>
+                <div class="operation-amount">
+                    ${formatCurrency(op.amount || op.total || 0)}
+                </div>
+            </div>
+            
+            ${op.description ? `
+            <div class="operation-description">
+                ${op.description}
+            </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// Helper function chuyển đổi định dạng ngày
+function convertToDisplayFormat(dateString) {
+    if (!dateString) return 'Không có ngày';
+    
+    try {
+        // Nếu đã là định dạng dd/mm/yyyy thì giữ nguyên
+        if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+            return dateString;
+        }
+        
+        // Nếu là định dạng ISO (yyyy-mm-dd)
+        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const parts = dateString.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        
+        // Nếu là ISO string với time
+        const date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+        
+        return dateString;
+    } catch (error) {
+        console.warn('❌ Date conversion error:', error);
+        return dateString;
+    }
+}
+
+
+
+
+// FIX: Cập nhật hàm tạo nội dung báo cáo để hiển thị nhập kho
+async function createDailyReportContent(reportData) {
+    console.log('🐛 createDailyReportContent - reportData:', reportData);
+    
+    const actualReceived = calculateActualReceived(reportData);
+    const totalExpenses = calculateTotalExpenses(reportData);
+    const totalTransfers = calculateTotalTransfers(reportData);
+    const totalExports = calculateTotalExports(reportData);
+    
+    // Lấy lịch sử xuất kho và nhập kho thực tế
+    const exportsHistory = await getExportsHistoryForDate(reportData.date);
+    const importsHistory = await getImportsHistoryForDate(reportData.date);
+    const totalHistoricalExports = exportsHistory.reduce((sum, record) => sum + record.quantity, 0);
+    const totalHistoricalImports = importsHistory.reduce((sum, record) => sum + record.quantity, 0);
+    
+    let content = `📊 BÁO CÁO NGÀY ${formatDateDisplay(reportData.date)}\n\n`;
+    
+    content += `💰 Số dư đầu kỳ: ${formatCurrency(reportData.openingBalance)}\n`;
+    content += `📈 Doanh thu: ${formatCurrency(reportData.revenue)}\n`;
+    content += `💸 Chi phí: ${formatCurrency(totalExpenses)}\n`;
+    content += `🏦 Chuyển khoản: ${formatCurrency(totalTransfers)}\n`;
+    content += `💰 Số dư cuối kỳ: ${formatCurrency(reportData.closingBalance)}\n`;
+    content += `🎯 Thực nhận: ${formatCurrency(actualReceived)}\n\n`;
+
+    // Chi tiết chi phí
+    if (reportData.expenses && reportData.expenses.length > 0) {
+        content += `📋 CHI TIẾT CHI PHÍ:\n`;
+        reportData.expenses.forEach(expense => {
+            content += `   • ${expense.name}: ${formatCurrency(expense.amount)}\n`;
+        });
+        content += `\n`;
+    }
+
+    // Chi tiết chuyển khoản
+    if (reportData.transfers && reportData.transfers.length > 0) {
+        content += `🏦 CHI TIẾT CHUYỂN KHOẢN:\n`;
+        reportData.transfers.forEach(transfer => {
+            const contentText = transfer.content || 'Chuyển khoản';
+            content += `   • ${contentText}: ${formatCurrency(transfer.amount)}\n`;
+        });
+        content += `\n`;
+    }
+
+    // NHẬP KHO - LỊCH SỬ (từ vận hành)
+    if (importsHistory.length > 0) {
+        content += `📥 NHẬP KHO (${totalHistoricalImports} sản phẩm):\n`;
+        
+        // Nhóm theo sản phẩm để tổng hợp
+        const productImports = {};
+        importsHistory.forEach(record => {
+            const productName = record.product?.name || 'Unknown';
+            if (!productImports[productName]) {
+                productImports[productName] = {
+                    quantity: 0,
+                    unit: record.product?.unit || '',
+                    totalValue: 0
+                };
+            }
+            productImports[productName].quantity += record.quantity;
+            productImports[productName].totalValue += record.totalPrice;
+        });
+        
+        // Hiển thị tổng hợp
+        Object.entries(productImports).forEach(([productName, data]) => {
+            content += `   • ${productName}: ${data.quantity} ${data.unit} - ${formatCurrency(data.totalValue)}\n`;
+        });
+        content += `\n`;
+    }
+
+    // XUẤT KHO - HIỆN TẠI (chưa lưu)
+    if (reportData.exports && reportData.exports.length > 0) {
+        const validExports = reportData.exports.filter(exp => exp.quantity > 0);
+        if (validExports.length > 0) {
+            content += `📦 XUẤT KHO HIỆN TẠI (${totalExports} sản phẩm):\n`;
+            
+            const inventory = await dbGetAll('inventory');
+            
+            for (const exportItem of validExports) {
+                const product = inventory.find(p => p.productId === exportItem.productId);
+                const productName = product ? product.name : exportItem.name;
+                const productUnit = product ? product.unit : '';
+                
+                content += `   • ${productName}: ${exportItem.quantity} ${productUnit}\n`;
+            }
+            content += `\n`;
+        }
+    }
+
+    // XUẤT KHO - LỊCH SỬ (đã lưu)
+    if (exportsHistory.length > 0) {
+        content += `📚 XUẤT KHO ĐÃ LƯU (${totalHistoricalExports} sản phẩm):\n`;
+        
+        // Nhóm theo sản phẩm để tổng hợp
+        const productExports = {};
+        exportsHistory.forEach(record => {
+            const productName = record.product?.name || 'Unknown';
+            if (!productExports[productName]) {
+                productExports[productName] = {
+                    quantity: 0,
+                    unit: record.product?.unit || ''
+                };
+            }
+            productExports[productName].quantity += record.quantity;
+        });
+        
+        // Hiển thị tổng hợp
+        Object.entries(productExports).forEach(([productName, data]) => {
+            content += `   • ${productName}: ${data.quantity} ${data.unit}\n`;
+        });
+        content += `\n`;
+    }
+
+    // TỔNG KẾT KHO
+    const totalAllImports = totalHistoricalImports;
+    const totalAllExports = totalExports + totalHistoricalExports;
+    
+    if (totalAllImports > 0 || totalAllExports > 0) {
+        content += `📊 TỔNG KẾT KHO:\n`;
+        if (totalAllImports > 0) {
+            content += `   📥 Nhập kho: ${totalAllImports} sản phẩm\n`;
+        }
+        if (totalAllExports > 0) {
+            content += `   📤 Xuất kho: ${totalAllExports} sản phẩm\n`;
+        }
+        content += `\n`;
+    }
+
+    content += `-- Quản lý Cafe --`;
+
+    console.log('📄 FINAL REPORT CONTENT:');
+    console.log(content);
+    
+    return content;
+}
+// FIX: Sửa hoàn toàn hàm saveMaterial - sử dụng ngày báo cáo cho cả date và dateKey
+async function saveMaterial() {
+    const name = document.getElementById('materialName').value.trim();
+    const quantity = parseFloat(document.getElementById('materialQuantity').value);
+    const unit = document.getElementById('materialUnit').value.trim();
+    const amount = parseFloat(document.getElementById('materialAmount').value);
+
+    if (!name || isNaN(quantity) || quantity <= 0 || isNaN(amount) || amount <= 0) {
+        showMessage('Vui lòng nhập đầy đủ Tên, Số lượng và Thành tiền hợp lệ.', 'error');
+        return;
+    }
+
+    try {
+        const currentUser = getCurrentUser();
+        const operationId = generateOperationId();
+        
+        // FIX: Sử dụng ngày báo cáo cho tất cả các trường date
+        const reportDate = currentReportDate; // Ngày được chọn trong báo cáo
+        const isoDate = new Date(reportDate + 'T12:00:00').toISOString(); // Tạo ISO string từ ngày báo cáo
+
+        console.log('📅 Saving material for report date:', reportDate);
+        console.log('📅 Generated ISO date:', isoDate);
+
+        // 1. Tạo Operation Record với ngày báo cáo
+        const operationRecord = {
+            operationId: operationId,
+            date: isoDate, // Sử dụng ngày báo cáo (không phải ngày hiện tại)
+            dateKey: reportDate, // Ngày báo cáo (YYYY-MM-DD)
+            type: 'material',
+            name: name,
+            quantity: quantity,
+            unit: unit,
+            amount: amount,
+            createdBy: currentUser.employeeId,
+            createdAt: isoDate // Sử dụng ngày báo cáo
+        };
+
+        await dbAdd('operations', operationRecord);
+        console.log('✅ Saved operation record with date:', reportDate);
+
+        // 2. Cập nhật Kho hàng
+        const inventoryItems = await dbGetAll('inventory');
+        let product = inventoryItems.find(p => p.name.toLowerCase() === name.toLowerCase());
+        
+        if (!product) {
+            // Tạo sản phẩm mới nếu chưa có
+            const newProductId = 'prod_' + Math.random().toString(36).substring(2, 9);
+            product = {
+                productId: newProductId,
+                name: name,
+                unit: unit,
+                currentQuantity: 0,
+                minStock: 0,
+                averagePrice: 0,
+                totalValue: 0,
+                createdAt: isoDate // Sử dụng ngày báo cáo
+            };
+            await dbAdd('inventory', product);
+            console.log('✅ Created new product with date:', reportDate);
+        }
+
+        // FIX: Tạo bản ghi lịch sử nhập kho với ngày báo cáo
+        const historyRecord = {
+            productId: product.productId,
+            type: 'in',
+            quantity: quantity,
+            unitPrice: amount / quantity,
+            totalPrice: amount,
+            note: `Mua sắm vận hành: ${name} - Ngày: ${formatDateDisplay(reportDate)}`,
+            createdBy: currentUser.employeeId,
+            date: isoDate, // Sử dụng ngày báo cáo
+            reportDate: reportDate // Thêm trường reportDate để theo dõi theo ngày báo cáo
+        };
+        await dbAdd('inventoryHistory', historyRecord);
+        console.log('✅ Saved inventory history with date:', reportDate);
+        
+        // Cập nhật tồn kho
+        const totalQuantityBefore = product.currentQuantity;
+        const totalValueBefore = product.totalValue;
+        
+        const newTotalQuantity = totalQuantityBefore + quantity;
+        const newTotalValue = totalValueBefore + amount;
+        const newAveragePrice = newTotalQuantity > 0 ? newTotalValue / newTotalQuantity : 0;
+        
+        await dbUpdate('inventory', product.productId, {
+            currentQuantity: newTotalQuantity,
+            totalValue: newTotalValue,
+            averagePrice: newAveragePrice,
+            updatedAt: isoDate // Sử dụng ngày báo cáo
+        });
+
+        console.log('✅ Updated inventory for date:', reportDate);
+        showMessage(`✅ Đã lưu mua sắm Nguyên liệu và cập nhật kho cho ngày ${formatDateDisplay(reportDate)}`, 'success');
+        closePopup();
+        loadReportsTab();
+
+    } catch (error) {
+        console.error('Error saving material operation:', error);
+        showMessage('❌ Lỗi khi lưu mua sắm Nguyên liệu', 'error');
+    }
+}
+
+// FIX: Sửa hoàn toàn hàm saveService - sử dụng ngày báo cáo
+async function saveService() {
+    const name = document.getElementById('serviceName').value.trim();
+    const amount = parseFloat(document.getElementById('serviceAmount').value);
+
+    if (!name || isNaN(amount) || amount <= 0) {
+        showMessage('Vui lòng nhập đầy đủ Tên Dịch vụ và Số tiền hợp lệ.', 'error');
+        return;
+    }
+
+    try {
+        const currentUser = getCurrentUser();
+        const operationId = generateOperationId();
+        
+        // FIX: Sử dụng ngày báo cáo cho tất cả các trường date
+        const reportDate = currentReportDate; // Ngày được chọn trong báo cáo
+        const isoDate = new Date(reportDate + 'T12:00:00').toISOString(); // Tạo ISO string từ ngày báo cáo
+
+        console.log('📅 Saving service for report date:', reportDate);
+        console.log('📅 Generated ISO date:', isoDate);
+
+        // Tạo Operation Record với ngày báo cáo
+        const operationRecord = {
+            operationId: operationId,
+            date: isoDate, // Sử dụng ngày báo cáo (không phải ngày hiện tại)
+            dateKey: reportDate, // Ngày báo cáo (YYYY-MM-DD)
+            type: 'service',
+            name: name,
+            quantity: 0,
+            unit: '',
+            amount: amount,
+            createdBy: currentUser.employeeId,
+            createdAt: isoDate // Sử dụng ngày báo cáo
+        };
+
+        await dbAdd('operations', operationRecord);
+        console.log('✅ Saved service operation with date:', reportDate);
+
+        showMessage(`✅ Đã lưu mua sắm Dịch vụ cho ngày ${formatDateDisplay(reportDate)}`, 'success');
+        closePopup();
+        loadReportsTab();
+
+    } catch (error) {
+        console.error('Error saving service operation:', error);
+        showMessage('❌ Lỗi khi lưu mua sắm Dịch vụ', 'error');
+    }
+}
+
+// FIX: Thêm hàm debug để kiểm tra dữ liệu operations
+async function debugOperations() {
+    try {
+        console.log('=== 🐛 DEBUG OPERATIONS ===');
+        console.log('📅 Current report date:', currentReportDate);
+        
+        const operations = await dbGetAll('operations');
+        console.log('📦 Total operations:', operations.length);
+        
+        const todayOps = operations.filter(op => op.dateKey === currentReportDate);
+        console.log('📊 Operations for current date:', todayOps.length);
+        
+        todayOps.forEach((op, index) => {
+            console.log(`   ${index + 1}. ${op.type} - ${op.name} - ${op.amount} - Date: ${op.date} - DateKey: ${op.dateKey}`);
+        });
+        
+        console.log('=== END DEBUG ===');
+    } catch (error) {
+        console.error('Error debugging operations:', error);
+    }
+}
+
+// FIX: Cập nhật hàm getImportsHistoryForDate để lọc chính xác hơn
+async function getImportsHistoryForDate(date) {
+    try {
+        const allHistory = await dbGetAll('inventoryHistory');
+        const inventory = await dbGetAll('inventory');
+        
+        console.log('📥 Looking for imports for date:', date);
+        
+        // Lọc theo type='in' và ngày báo cáo
+        const importsHistory = allHistory
+            .filter(record => {
+                if (record.type !== 'in') return false;
+                
+                // Kiểm tra theo reportDate trước, sau đó theo date
+                let recordDate = '';
+                if (record.reportDate) {
+                    recordDate = record.reportDate;
+                } else if (record.date) {
+                    // Parse từ ISO string
+                    recordDate = record.date.split('T')[0];
+                }
+                
+                console.log(`   Record: ${record.productId} - Date: ${recordDate} - Match: ${recordDate === date}`);
+                return recordDate === date;
+            })
+            .map(record => {
+                const product = inventory.find(p => p.productId === record.productId);
+                return {
+                    ...record,
+                    product: product
+                };
+            });
+        
+        console.log('📥 Found imports for', date, ':', importsHistory.length, 'records');
+        return importsHistory;
+        
+    } catch (error) {
+        console.error('Error getting imports history:', error);
+        return [];
+    }
+}
+
+// FIX: Cập nhật hàm showOperationsPopup để hiển thị ngày hiện tại
+function showOperationsPopup(type = 'material') {
+    const popupHTML = `
+        <div class="popup" style="max-width: 500px;">
+            <button class="close-popup" data-action="close-popup">×</button>
+            <h3>🔧 Mua sắm Vận hành - ${formatDateDisplay(currentReportDate)}</h3>
+            
+            <div class="popup-info">
+                <small>💡 Đang thao tác cho ngày: <strong>${formatDateDisplay(currentReportDate)}</strong></small>
+            </div>
+            
+            <div class="popup-tabs">
+                <button class="popup-tab-btn" data-tab="materialTab" id="materialTabBtn">🛒 Nguyên liệu / Hàng hóa</button>
+                <button class="popup-tab-btn" data-tab="serviceTab">📝 Dịch vụ / Chi phí khác</button>
+            </div>
+
+            <div id="materialTab" class="popup-tab-content">
+                <div class="form-group">
+                    <label>Tên / Mô tả:</label>
+                    <input type="text" id="materialName" placeholder="Tên nguyên liệu/hàng hóa">
+                </div>
+                <div class="form-group">
+                    <label>Số lượng:</label>
+                    <input type="number" id="materialQuantity" placeholder="Số lượng" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Đơn vị (vd: kg, gói):</label>
+                    <input type="text" id="materialUnit" placeholder="Đơn vị">
+                </div>
+                <div class="form-group">
+                    <label>Thành tiền (tổng):</label>
+                    <input type="number" id="materialAmount" placeholder="Thành tiền" min="0">
+                </div>
+                <button class="btn btn-primary" data-action="save-material" style="width: 100%;">💾 Lưu - Cập nhật kho</button>
+            </div>
+
+            <div id="serviceTab" class="popup-tab-content">
+                <div class="form-group">
+                    <label>Tên dịch vụ / Chi phí:</label>
+                    <input type="text" id="serviceName" placeholder="Tên dịch vụ/chi phí">
+                </div>
+                <div class="form-group">
+                    <label>Số tiền:</label>
+                    <input type="number" id="serviceAmount" placeholder="Số tiền" min="0">
+                </div>
+                <button class="btn btn-primary" data-action="save-service" style="width: 100%;">💾 Lưu</button>
+            </div>
+            
+            <div class="popup-actions">
+                <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
+            </div>
+        </div>
+    `;
+    showPopup(popupHTML);
+    setupOperationsEventListeners(type);
+}
+
+// FIX: Thêm hàm để migrate dữ liệu cũ (chạy một lần)
+async function migrateOperationsDate() {
+    try {
+        console.log('🔄 Migrating operations date...');
+        const operations = await dbGetAll('operations');
+        
+        let migratedCount = 0;
+        for (const op of operations) {
+            if (op.date && !op.dateKey) {
+                // Tạo dateKey từ date
+                const dateKey = op.date.split('T')[0];
+                await dbUpdate('operations', op.operationId, {
+                    dateKey: dateKey
+                });
+                migratedCount++;
+                console.log(`✅ Migrated operation: ${op.operationId} -> ${dateKey}`);
+            }
+        }
+        
+        console.log(`✅ Migration completed: ${migratedCount} operations migrated`);
+        return migratedCount;
+    } catch (error) {
+        console.error('Error migrating operations:', error);
+        return 0;
+    }
+}
+
+// FIX: Sửa hàm updateInventoryFromExports - dùng thời gian hiện tại với ngày được chọn
+async function updateInventoryFromExports() {
+    try {
+        console.log('📦 Updating inventory from exports for date:', currentReportDate);
+        
+        if (!currentReport.exports || currentReport.exports.length === 0) {
+            console.log('📭 No exports to process');
+            return;
+        }
+        
+        // FIX: Lấy thời gian hiện tại nhưng set ngày theo ngày lựa chọn
+        const now = new Date();
+        const reportDate = currentReportDate; // YYYY-MM-DD
+        
+        // Tạo date object từ ngày lựa chọn + giờ hiện tại
+        const [year, month, day] = reportDate.split('-');
+        const exportDateTime = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+        const isoDate = exportDateTime.toISOString();
+        
+        console.log('📅 Export date time:', {
+            reportDate: reportDate,
+            currentTime: now.toLocaleTimeString(),
+            exportDateTime: exportDateTime,
+            isoDate: isoDate
+        });
+        
+        for (const exportItem of currentReport.exports) {
+            console.log('🔄 Processing export:', exportItem);
+            
+            const product = await dbGet('inventory', exportItem.productId);
+            
+            if (product) {
+                console.log('🎯 Found product:', product.name, 'Stock:', product.currentQuantity);
+                
+                // Kiểm tra số lượng xuất
+                if (exportItem.quantity > product.currentQuantity) {
+                    showMessage(`❌ Không đủ tồn kho cho ${product.name}. Tồn: ${product.currentQuantity}, Xuất: ${exportItem.quantity}`, 'error');
+                    continue;
+                }
+                
+                // Cập nhật số lượng tồn kho
+                const newQuantity = product.currentQuantity - exportItem.quantity;
+                const newTotalValue = newQuantity * product.averagePrice;
+                
+                await dbUpdate('inventory', product.productId, {
+                    currentQuantity: newQuantity,
+                    totalValue: newTotalValue,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                // FIX: Ghi lịch sử xuất kho với thời gian hiện tại + ngày lựa chọn
+                const historyRecord = {
+                    productId: product.productId,
+                    type: 'out',
+                    quantity: exportItem.quantity,
+                    unitPrice: product.averagePrice,
+                    totalPrice: exportItem.quantity * product.averagePrice,
+                    note: `Xuất kho bán hàng - NV: ${getCurrentUser().name}`,
+                    createdBy: getCurrentUser().employeeId,
+                    date: isoDate, // Thời gian hiện tại với ngày lựa chọn
+                    reportDate: reportDate // Ngày báo cáo
+                };
+                
+                await dbAdd('inventoryHistory', historyRecord);
+                console.log('📝 Added export history with date:', isoDate);
+                
+                console.log(`✅ Updated inventory for ${product.name}: -${exportItem.quantity}`);
+            } else {
+                console.warn(`❌ Product not found: ${exportItem.productId}`);
+                showMessage(`❌ Sản phẩm không tồn tại trong kho: ${exportItem.name}`, 'error');
+            }
+        }
+        
+        console.log('🎉 Finished processing exports');
+        
+    } catch (error) {
+        console.error('❌ Error updating inventory from exports:', error);
+        throw error;
+    }
+}
+
+// FIX: Hàm đơn giản để tạo datetime từ ngày lựa chọn
+function createDateTimeForReport(selectedDate) {
+    const now = new Date();
+    const [year, month, day] = selectedDate.split('-');
+    // Giữ nguyên giờ phút giây hiện tại, chỉ thay đổi ngày
+    return new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+}
+
+// FIX: Sửa hàm getExportsHistoryForDate - lọc theo ngày báo cáo
+async function getExportsHistoryForDate(date) {
+    try {
+        // Lấy TẤT CẢ history
+        const allHistory = await dbGetAll('inventoryHistory');
+        
+        // Lấy thông tin sản phẩm
+        const inventory = await dbGetAll('inventory');
+        
+        console.log('📋 Looking for exports history for date:', date);
+        
+        // Lọc và map giống tab Kho
+        const exportsHistory = allHistory
+            .filter(record => {
+                // Lọc theo type='out' và ngày
+                if (record.type !== 'out') return false;
+                
+                let recordDate = '';
+                if (record.reportDate) {
+                    recordDate = record.reportDate;
+                } else if (record.date) {
+                    // Parse từ ISO string
+                    recordDate = record.date.split('T')[0];
+                }
+                
+                console.log(`   Export record: ${record.productId} - Date: ${recordDate} - Match: ${recordDate === date}`);
+                return recordDate === date;
+            })
+            .map(record => {
+                const product = inventory.find(p => p.productId === record.productId);
+                return {
+                    ...record,
+                    product: product
+                };
+            });
+        
+        console.log('📋 Exports history for', date, ':', exportsHistory.length, 'records');
+        return exportsHistory;
+        
+    } catch (error) {
+        console.error('Error getting exports history:', error);
+        return [];
+    }
+}
+
+// FIX: Sửa hàm increaseExport - thêm log để debug
+async function increaseExport(productId) {
+    console.log('🎯 increaseExport CALLED for date:', currentReportDate, 'productId:', productId);
+    
+    if (!currentReport) {
+        console.error('❌ currentReport is null!');
+        return;
+    }
+
+    try {
+        const product = await dbGet('inventory', productId);
+        if (!product) {
+            console.error('❌ Product not found:', productId);
+            showMessage('❌ Sản phẩm không tồn tại.', 'error');
+            return;
+        }
+
+        console.log('📦 Product found:', product.name);
+        console.log('📊 Current exports BEFORE:', currentReport.exports);
+
+        // Kiểm tra tồn kho
+        const currentExport = currentReport.exports.find(exp => exp.productId === productId);
+        const exportedQuantity = currentExport ? currentExport.quantity : 0;
+
+        console.log('📈 Export info:', {
+            currentExport: currentExport,
+            exportedQuantity: exportedQuantity,
+            productStock: product.currentQuantity
+        });
+
+        if (exportedQuantity >= product.currentQuantity) {
+            console.log('❌ Not enough stock');
+            showMessage(`❌ Tồn kho chỉ còn ${product.currentQuantity} ${product.unit}. Không thể xuất thêm.`, 'error');
+            return;
+        }
+
+        let updatedExports = [...currentReport.exports];
+        let itemIndex = updatedExports.findIndex(exp => exp.productId === productId);
+
+        if (itemIndex > -1) {
+            // Tăng số lượng
+            updatedExports[itemIndex].quantity += 1;
+            console.log('📈 Increased existing export:', updatedExports[itemIndex]);
+        } else {
+            // Thêm mới với ngày báo cáo
+            const newExport = {
+                productId: productId,
+                quantity: 1,
+                name: product.name,
+                unit: product.unit,
+                exportDate: currentReportDate, // Sử dụng ngày báo cáo
+                createdAt: new Date(currentReportDate + 'T12:00:00').toISOString() // Sử dụng ngày báo cáo
+            };
+            updatedExports.push(newExport);
+            console.log('🆕 Added new export for date:', currentReportDate, newExport);
+        }
+        
+        // Cập nhật currentReport
+        currentReport.exports = updatedExports;
+        console.log('📦 Current exports AFTER:', currentReport.exports);
+
+        // Cập nhật database
+        console.log('💾 Saving to database for date:', currentReportDate);
+        await dbUpdate('reports', currentReport.reportId, {
+            exports: updatedExports,
+            updatedBy: getCurrentUser().employeeId,
+            updatedAt: new Date().toISOString()
+        });
+        
+        console.log('✅ Database updated successfully for date:', currentReportDate);
+        
+        // Kiểm tra lại từ database
+        const reportFromDB = await dbGet('reports', currentReport.reportId);
+        console.log('🔄 Report from DB after update:', reportFromDB.exports);
+
+        // Tải lại tab
+        console.log('🔄 Reloading reports tab...');
+        loadReportsTab();
+
+    } catch (error) {
+        console.error('❌ Error in increaseExport:', error);
+        showMessage('❌ Lỗi khi tăng số lượng xuất kho', 'error');
+    }
+}
+
+// FIX: Thêm hàm debug để kiểm tra lịch sử xuất kho
+async function debugExportsHistory() {
+    try {
+        console.log('=== 🐛 DEBUG EXPORTS HISTORY ===');
+        console.log('📅 Current report date:', currentReportDate);
+        
+        const allHistory = await dbGetAll('inventoryHistory');
+        console.log('📜 Total history records:', allHistory.length);
+        
+        const exportsHistory = allHistory.filter(record => record.type === 'out');
+        console.log('📤 Total export records:', exportsHistory.length);
+        
+        const todayExports = exportsHistory.filter(record => {
+            let recordDate = '';
+            if (record.reportDate) {
+                recordDate = record.reportDate;
+            } else if (record.date) {
+                recordDate = record.date.split('T')[0];
+            }
+            return recordDate === currentReportDate;
+        });
+        
+        console.log('📊 Exports for current date:', todayExports.length);
+        
+        todayExports.forEach((record, index) => {
+            console.log(`   ${index + 1}. ${record.productId} - ${record.quantity} - Date: ${record.date} - ReportDate: ${record.reportDate}`);
+        });
+        
+        console.log('=== END DEBUG ===');
+    } catch (error) {
+        console.error('Error debugging exports history:', error);
+    }
+}
+
+// FIX: Cập nhật hàm showExportsHistoryPopup để hiển thị đúng ngày
+async function showExportsHistoryPopup() {
+    try {
+        // Lấy tất cả lịch sử xuất kho cho ngày hiện tại trong báo cáo
+        const exportsHistory = await getExportsHistoryForDate(currentReportDate);
+        
+        console.log('📦 Exports history for today:', exportsHistory);
+        
+        if (exportsHistory.length === 0) {
+            showMessage(`📭 Không có lịch sử xuất kho cho ngày ${formatDateDisplay(currentReportDate)}`, 'info');
+            return;
+        }
+        
+        // Lấy thông tin sản phẩm để hiển thị tên
+        const inventory = await dbGetAll('inventory');
+        
+        const popupHTML = `
+            <div class="popup" style="max-width: 800px;">
+                <button class="close-popup" data-action="close-popup">×</button>
+                <h3>📦 Lịch sử Xuất kho - ${formatDateDisplay(currentReportDate)}</h3>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Tên sản phẩm</th>
+                            <th>Thời gian</th>
+                            <th>SL xuất</th>
+                            <th>Đơn giá</th>
+                            <th>Thành tiền</th>
+                            <th>Ghi chú</th>
+                            <th>NV thực hiện</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${exportsHistory.map((record, index) => {
+                            const product = inventory.find(p => p.productId === record.productId);
+                            const productName = product ? product.name : 'Unknown';
+                            
+                            return `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${productName}</td>
+                                    <td>${formatDateTime(record.date)}</td>
+                                    <td style="color: red;">-${record.quantity}</td>
+                                    <td>${record.unitPrice ? formatCurrency(record.unitPrice) : '-'}</td>
+                                    <td>${record.totalPrice ? formatCurrency(record.totalPrice) : '-'}</td>
+                                    <td>${record.note || ''}</td>
+                                    <td>${record.createdBy || 'System'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                
+                <div class="export-summary">
+                    <strong>Tổng xuất: ${exportsHistory.reduce((sum, record) => sum + record.quantity, 0)} sản phẩm</strong>
+                </div>
+                
+                <div class="popup-actions">
+                    <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
+                    <button class="btn btn-info" onclick="debugExportsHistory()">🐛 Debug</button>
+                </div>
+            </div>
+        `;
+        
+        showPopup(popupHTML);
+        
+    } catch (error) {
+        console.error('Error loading exports history:', error);
+        showMessage('❌ Lỗi khi tải lịch sử xuất kho', 'error');
+    }
+}
+
+// FIX: Thêm hàm migrate exports history (chạy một lần)
+async function migrateExportsHistoryDate() {
+    try {
+        console.log('🔄 Migrating exports history date...');
+        const allHistory = await dbGetAll('inventoryHistory');
+        
+        let migratedCount = 0;
+        for (const record of allHistory) {
+            if (record.type === 'out' && record.date && !record.reportDate) {
+                // Tạo reportDate từ date
+                const reportDate = record.date.split('T')[0];
+                await dbUpdate('inventoryHistory', record.id || record.productId, {
+                    reportDate: reportDate
+                });
+                migratedCount++;
+                console.log(`✅ Migrated export record: ${record.productId} -> ${reportDate}`);
+            }
+        }
+        
+        console.log(`✅ Export migration completed: ${migratedCount} records migrated`);
+        return migratedCount;
+    } catch (error) {
+        console.error('Error migrating exports history:', error);
+        return 0;
+    }
+}
+
+// FIX: Cập nhật hàm saveCurrentReport để đảm bảo xuất kho với ngày đúng
+async function saveCurrentReport() {
+    if (!currentReport) return;
+    
+    try {
+        console.log('💾 saveCurrentReport called - Saving all data to DB for date:', currentReportDate);
+        
+        // LẤY DỮ LIỆU TỪ UI INPUTS
+        const revenueInput = document.getElementById('revenueInput');
+        const closingBalanceInput = document.getElementById('closingBalanceInput');
+        
+        if (revenueInput && closingBalanceInput) {
+            const revenue = parseFloat(revenueInput.value) || 0;
+            const closingBalance = parseFloat(closingBalanceInput.value) || 0;
+            
+            console.log('📊 Saving data - Revenue:', revenue, 'Closing Balance:', closingBalance);
+            
+            // CẬP NHẬT CURRENT REPORT VỚI DỮ LIỆU MỚI NHẤT
+            currentReport.revenue = revenue;
+            currentReport.closingBalance = closingBalance;
+            
+            // ĐẢM BẢO exports tồn tại
+            if (!currentReport.exports) {
+                currentReport.exports = [];
+            }
+            
+            // LƯU TẤT CẢ VÀO DATABASE
+            await dbUpdate('reports', currentReport.reportId, {
+                revenue: revenue,
+                closingBalance: closingBalance,
+                expenses: currentReport.expenses || [],
+                transfers: currentReport.transfers || [],
+                exports: currentReport.exports || [],
+                updatedBy: getCurrentUser().employeeId,
+                updatedAt: new Date().toISOString()
+            });
+            
+            console.log('✅ All data saved to database for date:', currentReportDate);
+            
+            // CẬP NHẬT SỐ DƯ ĐẦU KỲ CHO NGÀY TIẾP THEO
+            await updateNextDayOpeningBalance(closingBalance, currentReportDate);
+            
+            // XỬ LÝ XUẤT KHO NẾU CÓ - với ngày báo cáo
+            if (currentReport.exports && currentReport.exports.length > 0) {
+                console.log('📦 Processing exports for inventory update for date:', currentReportDate);
+                await updateInventoryFromExports();
+                
+                // RESET xuất kho sau khi lưu thành công
+                currentReport.exports = [];
+                await dbUpdate('reports', currentReport.reportId, {
+                    exports: [],
+                    updatedAt: new Date().toISOString()
+                });
+            }
+            
+            showMessage(`✅ Đã lưu báo cáo thành công cho ngày ${formatDateDisplay(currentReportDate)}!`, 'success');
+            
+            // Reload để hiển thị trạng thái mới
+            setTimeout(() => {
+                loadReportsTab();
+            }, 1000);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error saving report:', error);
+        showMessage('❌ Lỗi khi lưu báo cáo: ' + error.message, 'error');
+    }
+}
+
+// Gọi hàm migrate một lần khi khởi động (có thể remove sau)
+// setTimeout(() => migrateExportsHistoryDate(), 3000);

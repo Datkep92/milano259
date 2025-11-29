@@ -1,6 +1,6 @@
 // Database configuration and utilities
 const DB_NAME = 'CafeManagementDB';
-const DB_VERSION = 3;
+const DB_VERSION = 5;
 
 // Database instance
 let db = null;
@@ -90,6 +90,18 @@ function createObjectStores(database) {
         attendanceStore.createIndex('month', 'month', { unique: false });
     }
 
+    // ⭐ NEW: Discipline Records store (thưởng/phạt)
+    if (!database.objectStoreNames.contains('discipline_records')) {
+        const disciplineStore = database.createObjectStore('discipline_records', { 
+            keyPath: 'id',
+            autoIncrement: true 
+        });
+
+        disciplineStore.createIndex('employeeId', 'employeeId', { unique: false });
+        disciplineStore.createIndex('month', 'month', { unique: false });
+        disciplineStore.createIndex('type', 'type', { unique: false });
+    }
+
     // Settings store
     if (!database.objectStoreNames.contains('settings')) {
         const settingsStore = database.createObjectStore('settings', { 
@@ -99,6 +111,7 @@ function createObjectStores(database) {
 
     console.log('Object stores created successfully');
 }
+
 
 // Generic database operations
 function dbAdd(storeName, data) {

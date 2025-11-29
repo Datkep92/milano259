@@ -1,0 +1,1934 @@
+/* ===== EMPLOYEES TAB STYLES - COMPLETELY REWRITTEN ===== */
+#employees {
+    padding: 12px;
+    background: #f8f9fa;
+    min-height: 100%;
+}
+
+/* Header section */
+#employees .employees-header {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+}
+
+#employees .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+#employees .header-top h2 {
+    font-size: 18px;
+    color: #1a202c;
+    margin: 0;
+    font-weight: 700;
+}
+
+/* Month year selector */
+#employees .month-year-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f7fafc;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    cursor: pointer;
+    min-width: 140px;
+    justify-content: space-between;
+}
+
+#employees .selector-display {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+#employees .selector-arrow {
+    font-size: 12px;
+    color: #718096;
+}
+
+/* Search and overview */
+#employees .search-overview-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+#employees .search-box {
+    flex: 1;
+    max-width: 200px;
+}
+
+#employees .search-box input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 14px;
+    background: white;
+}
+
+#employees .overview-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    flex: 2;
+}
+
+#employees .stat-item {
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    padding: 12px 8px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+#employees .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+
+#employees .stat-label {
+    font-size: 11px;
+    color: #718096;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#employees .total-salary {
+    background: linear-gradient(135deg, #e8f5e8 0%, #c6f6d5 100%);
+    border: 2px solid #9ae6b4;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 700;
+    color: #2e7d32;
+    font-size: 16px;
+}
+
+/* Employee list section */
+#employees .employee-list-section {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+}
+
+#employees .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f7fafc;
+}
+
+#employees .list-header h3 {
+    font-size: 16px;
+    color: #1a202c;
+    margin: 0;
+    font-weight: 600;
+}
+
+#employees .add-employee-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Employee grid */
+#employees .employee-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+#employees .employee-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#employees .employee-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+#employees .employee-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 6px;
+    line-height: 1.3;
+}
+
+#employees .employee-salary {
+    font-size: 17px;
+    font-weight: 800;
+    color: #667eea;
+    margin-bottom: 4px;
+}
+
+#employees .employee-phone {
+    font-size: 12px;
+    color: #718096;
+    margin-bottom: 6px;
+}
+
+#employees .employee-off,
+#employees .employee-overtime {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+#employees .employee-off {
+    background: #fed7d7;
+    color: #c53030;
+    border: 1px solid #feb2b2;
+}
+
+#employees .employee-overtime {
+    background: #c6f6d5;
+    color: #276749;
+    border: 1px solid #9ae6b4;
+}
+
+/* Empty state */
+#employees .empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    color: #718096;
+    grid-column: 1 / -1;
+}
+
+/* ===== EMPLOYEE DETAIL POPUP - COMPLETELY REWRITTEN ===== */
+.employee-detail-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 10000;
+    padding: 0;
+}
+
+.employee-detail-popup.active {
+    display: flex;
+}
+
+.employee-detail-popup .popup-content {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 100%;
+    height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Header */
+.employee-detail-popup .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    background: white;
+    border-radius: 24px 24px 0 0;
+    z-index: 10;
+}
+
+.employee-detail-popup .popup-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0;
+    padding-right: 20px;
+    line-height: 1.3;
+}
+
+.employee-detail-popup .close-popup {
+    background: #f7fafc;
+    border: none;
+    font-size: 20px;
+    color: #718096;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Basic info section - COMPLETELY REWRITTEN */
+.employee-detail-popup .basic-info {
+    padding: 20px 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Info row container */
+.employee-detail-popup .info-row {
+    margin-bottom: 16px;
+}
+
+/* Dòng 1 - Single line full width */
+.employee-detail-popup .info-row .line-single {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+}
+
+.employee-detail-popup .info-row .line-single .info-label {
+    font-size: 14px;
+    color: #718096;
+    font-weight: 500;
+}
+
+.employee-detail-popup .info-row .line-single .info-value {
+    font-size: 15px;
+    color: #2d3748;
+    font-weight: 700;
+}
+
+/* Dòng 2 và 3 - Grid layout */
+.employee-detail-popup .info-row .line-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.employee-detail-popup .info-row .line-grid .stat-cell {
+    background: #f8f9fa;
+    padding: 14px 12px;
+    border-radius: 10px;
+    border: 2px solid #e2e8f0;
+    text-align: center;
+}
+
+.employee-detail-popup .info-row .line-grid .stat-cell .stat-label {
+    font-size: 11px;
+    color: #718096;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.employee-detail-popup .info-row .line-grid .stat-cell .stat-value {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.2;
+    display: block;
+}
+
+/* Màu sắc cụ thể cho từng loại */
+.employee-detail-popup .info-row .line-grid:nth-child(1) .stat-cell:nth-child(1) .stat-value {
+    color: #c53030; /* NGÀY OFF */
+}
+
+.employee-detail-popup .info-row .line-grid:nth-child(1) .stat-cell:nth-child(2) .stat-value {
+    color: #276749; /* TĂNG CA */
+}
+
+.employee-detail-popup .info-row .line-grid:nth-child(2) .stat-cell:nth-child(1) .stat-value {
+    color: #276749; /* THƯỞNG */
+}
+
+.employee-detail-popup .info-row .line-grid:nth-child(2) .stat-cell:nth-child(2) .stat-value {
+    color: #c53030; /* PHẠT */
+}
+
+/* Lương thực nhận */
+.employee-detail-popup .actual-salary {
+    font-size: 24px;
+    font-weight: 800;
+    color: #667eea;
+    text-align: center;
+    margin-top: 16px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    border-radius: 16px;
+    border: 3px solid #9ae6b4;
+}
+
+/* Calendar section */
+.employee-detail-popup .calendar-section {
+    padding: 20px 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.employee-detail-popup .calendar-container {
+    background: #f8f9fa;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.employee-detail-popup .calendar-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.employee-detail-popup .calendar-header-day {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #718096;
+    padding: 6px 2px;
+    text-transform: uppercase;
+}
+
+.employee-detail-popup .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.employee-detail-popup .calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    background: white;
+    border: 2px solid transparent;
+    cursor: pointer;
+    min-height: 32px;
+}
+
+.employee-detail-popup .calendar-day.empty {
+    background: transparent;
+    border: none;
+    cursor: default;
+}
+
+.employee-detail-popup .calendar-day.today {
+    border-color: #667eea;
+    color: #667eea;
+    background: #f0f4ff;
+}
+
+.employee-detail-popup .calendar-day.off {
+    background: #fed7d7;
+    color: #c53030;
+    border-color: #feb2b2;
+}
+
+.employee-detail-popup .calendar-day.overtime {
+    background: #c6f6d5;
+    color: #276749;
+    border-color: #9ae6b4;
+}
+
+/* Stats section */
+.employee-detail-popup .stats-section {
+    padding: 20px 24px;
+}
+
+.employee-detail-popup .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.employee-detail-popup .action-btn {
+    padding: 16px 12px;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 50px;
+}
+
+.employee-detail-popup .edit-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.employee-detail-popup .reward-btn {
+    background: #c6f6d5;
+    color: #276749;
+    border: 2px solid #9ae6b4;
+}
+
+.employee-detail-popup .penalty-btn {
+    background: #fed7d7;
+    color: #c53030;
+    border: 2px solid #feb2b2;
+}
+
+.employee-detail-popup .close-btn {
+    background: #e2e8f0;
+    color: #4a5568;
+    border: 2px solid #cbd5e0;
+    grid-column: 1 / -1;
+    margin-top: 8px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .employee-detail-popup .popup-content {
+        height: 85vh;
+    }
+    
+    .employee-detail-popup .popup-header,
+    .employee-detail-popup .basic-info,
+    .employee-detail-popup .calendar-section,
+    .employee-detail-popup .stats-section {
+        padding: 16px;
+    }
+    
+    .employee-detail-popup .info-row .line-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .employee-detail-popup .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Thêm vào employees.css */
+.employee-detail-popup .discipline-btn {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+    color: white;
+    border: 2px solid #ed8936;
+    box-shadow: 0 2px 8px rgba(237, 137, 54, 0.3);
+}
+
+/* Thêm vào employees.css */
+.employee-detail-popup .calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    background: white;
+    border: 2px solid transparent;
+    cursor: pointer;
+    min-height: 32px;
+    padding: 2px;
+    position: relative;
+}
+
+.employee-detail-popup .calendar-day .day-number {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 1px;
+}
+
+.employee-detail-popup .calendar-day .day-icon {
+    font-size: 10px;
+    line-height: 1;
+}
+
+.employee-detail-popup .calendar-day.today .day-number {
+    color: #667eea;
+    font-weight: 800;
+}
+
+.employee-detail-popup .calendar-day.off .day-number {
+    color: #c53030;
+}
+
+.employee-detail-popup .calendar-day.overtime .day-number {
+    color: #276749;
+}
+
+/* Thêm vào employees.css */
+.attendance-options-popup .popup {
+    max-width: 300px;
+}
+
+.attendance-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 20px 0;
+}
+
+.attendance-option-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    width: 100%;
+    text-align: left;
+}
+
+.attendance-option-btn:active {
+    transform: scale(0.98);
+}
+
+.attendance-option-btn.selected {
+    border-color: #667eea;
+    background: #f0f4ff;
+}
+
+.attendance-option-btn.normal-btn.selected {
+    border-color: #a0aec0;
+    background: #f7fafc;
+}
+
+.attendance-option-btn.off-btn.selected {
+    border-color: #fc8181;
+    background: #fff5f5;
+}
+
+.attendance-option-btn.overtime-btn.selected {
+    border-color: #68d391;
+    background: #f0fff4;
+}
+
+.option-icon {
+    font-size: 20px;
+    width: 24px;
+    text-align: center;
+}
+
+.option-text {
+    flex: 1;
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 14px;
+}
+
+.option-check {
+    color: #667eea;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* ===== EMPLOYEE DETAIL POPUP - HEIGHT ADJUSTED ===== */
+.employee-detail-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: flex-start; /* Thay đổi từ flex-end thành flex-start */
+    justify-content: center;
+    z-index: 10000;
+    padding: 0;
+}
+
+.employee-detail-popup.active {
+    display: flex;
+}
+
+.employee-detail-popup .popup-content {
+    background: white;
+    border-radius: 0 0 24px 24px; /* Đảo ngược border-radius */
+    width: 100%;
+    max-width: 100%;
+    height: 92vh; /* Tăng chiều cao lên 92% viewport */
+    margin-top: 0; /* Đảm bảo sát top */
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: popupSlideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Đổi animation */
+}
+
+@keyframes popupSlideDown {
+    from { 
+        opacity: 0; 
+        transform: translateY(-100%); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* Header điều chỉnh cho vị trí mới */
+.employee-detail-popup .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    background: white;
+    border-radius: 0 0 0 0; /* Xóa border-radius trên cùng */
+    z-index: 10;
+}
+
+/* Điều chỉnh padding các section */
+.employee-detail-popup .basic-info {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .calendar-section {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .stats-section {
+    padding: 16px 24px;
+    padding-bottom: 24px; /* Thêm padding bottom để cách xa edge */
+}
+
+/* Điều chỉnh chiều cao calendar để tận dụng không gian */
+.employee-detail-popup .calendar-container {
+    background: #f8f9fa;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+    min-height: 200px; /* Đảm bảo calendar có chiều cao tối thiểu */
+}
+
+/* Tăng kích thước các ngày trong lịch */
+.employee-detail-popup .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px; /* Tăng gap một chút */
+}
+
+.employee-detail-popup .calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    background: white;
+    border: 2px solid transparent;
+    cursor: pointer;
+    min-height: 36px; /* Tăng kích thước tối thiểu */
+    padding: 3px;
+}
+
+.employee-detail-popup .calendar-day .day-number {
+    font-size: 12px; /* Tăng font size */
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.employee-detail-popup .calendar-day .day-icon {
+    font-size: 12px; /* Tăng font size */
+    line-height: 1;
+}
+
+/* Điều chỉnh cho mobile */
+@media (max-width: 480px) {
+    .employee-detail-popup .popup-content {
+        height: 94vh; /* Cao hơn trên mobile */
+        border-radius: 0 0 16px 16px;
+    }
+    
+    .employee-detail-popup .popup-header {
+        padding: 16px 20px 12px;
+    }
+    
+    .employee-detail-popup .basic-info,
+    .employee-detail-popup .calendar-section,
+    .employee-detail-popup .stats-section {
+        padding: 12px 20px;
+    }
+    
+    .employee-detail-popup .calendar-day {
+        min-height: 32px;
+    }
+    
+    .employee-detail-popup .calendar-day .day-number {
+        font-size: 11px;
+    }
+    
+    .employee-detail-popup .calendar-day .day-icon {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 360px) {
+    .employee-detail-popup .popup-content {
+        height: 96vh; /* Cao nhất trên màn hình nhỏ */
+    }
+    
+    .employee-detail-popup .popup-header {
+        padding: 14px 16px 10px;
+    }
+    
+    .employee-detail-popup .basic-info,
+    .employee-detail-popup .calendar-section,
+    .employee-detail-popup .stats-section {
+        padding: 10px 16px;
+    }
+    
+    .employee-detail-popup .calendar-day {
+        min-height: 30px;
+        padding: 2px;
+    }
+}
+
+/* Đảm bảo scroll mượt mà */
+.employee-detail-popup .popup-content {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Ẩn scrollbar nhưng vẫn scroll được */
+.employee-detail-popup .popup-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.employee-detail-popup .popup-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.employee-detail-popup .popup-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+/* Tối ưu cho popup lựa chọn attendance */
+.attendance-options-popup .popup {
+    max-width: 320px;
+    margin-top: 20vh; /* Căn giữa theo chiều dọc */
+}
+
+/* Điều chỉnh cho popup chế tài */
+.popup:not(.attendance-options-popup .popup) {
+    max-width: 400px;
+    margin-top: 15vh; /* Căn giữa theo chiều dọc */
+}
+
+/* Đảm bảo nút close dễ click */
+.employee-detail-popup .close-popup {
+    background: #f7fafc;
+    border: none;
+    font-size: 20px;
+    color: #718096;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 11; /* Đảm bảo trên cùng */
+}
+
+/* Hiệu ứng khi click */
+.employee-detail-popup .close-popup:active {
+    background: #edf2f7;
+    transform: scale(0.9);
+}
+
+/* ===== FIX STATS SECTION FOR MOBILE ===== */
+.employee-detail-popup .stats-section {
+    padding: 16px 24px;
+    padding-bottom: 24px;
+}
+
+.employee-detail-popup .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2 cột trên desktop */
+    gap: 10px;
+}
+
+/* Mobile: chuyển thành 3 nút trên 2 hàng */
+@media (max-width: 480px) {
+    .employee-detail-popup .stats-grid {
+        grid-template-columns: 1fr 1fr; /* 2 cột trên mobile */
+        grid-template-rows: auto auto; /* 2 hàng */
+        gap: 8px;
+    }
+    
+    /* Nút Sửa NV và Chế tài ở hàng 1 */
+    .employee-detail-popup .stats-grid .edit-btn,
+    .employee-detail-popup .stats-grid .discipline-btn {
+        grid-row: 1;
+        min-height: 44px;
+        font-size: 13px;
+        padding: 12px 8px;
+    }
+    
+    /* Nút Đóng chiếm full width ở hàng 2 */
+    .employee-detail-popup .stats-grid .close-btn {
+        grid-column: 1 / -1; /* Chiếm cả 2 cột */
+        grid-row: 2;
+        min-height: 44px;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+}
+
+/* Mobile nhỏ hơn */
+@media (max-width: 360px) {
+    .employee-detail-popup .stats-grid {
+        grid-template-columns: 1fr; /* 1 cột trên mobile nhỏ */
+        grid-template-rows: auto auto auto; /* 3 hàng */
+    }
+    
+    .employee-detail-popup .stats-grid .edit-btn,
+    .employee-detail-popup .stats-grid .discipline-btn {
+        grid-column: 1;
+        grid-row: auto;
+    }
+    
+    .employee-detail-popup .stats-grid .edit-btn {
+        grid-row: 1;
+    }
+    
+    .employee-detail-popup .stats-grid .discipline-btn {
+        grid-row: 2;
+    }
+    
+    .employee-detail-popup .stats-grid .close-btn {
+        grid-column: 1;
+        grid-row: 3;
+        margin-top: 8px;
+    }
+}
+
+/* Đảm bảo nút vừa vặn */
+.employee-detail-popup .action-btn {
+    padding: 12px 8px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 48px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Responsive text */
+@media (max-width: 380px) {
+    .employee-detail-popup .action-btn {
+        font-size: 12px;
+        padding: 10px 6px;
+        gap: 4px;
+    }
+    
+    .employee-detail-popup .action-btn .btn-icon {
+        font-size: 14px;
+    }
+}
+/* ===== EMPLOYEE DETAIL POPUP - NEW LAYOUT ===== */
+
+/* Lương cơ bản */
+.employee-detail-popup .basic-info {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .salary-base {
+    text-align: center;
+    padding: 16px;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+}
+
+.employee-detail-popup .salary-label {
+    font-size: 14px;
+    color: #718096;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.employee-detail-popup .salary-amount {
+    font-size: 18px;
+    font-weight: 800;
+    color: #667eea;
+}
+
+/* Calendar section */
+.employee-detail-popup .calendar-section {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Legend cho calendar */
+.employee-detail-popup .calendar-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 12px 0 8px;
+    flex-wrap: wrap;
+}
+
+.employee-detail-popup .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #718096;
+}
+
+.employee-detail-popup .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid;
+}
+
+.employee-detail-popup .legend-normal {
+    background: white;
+    border-color: #e2e8f0;
+}
+
+.employee-detail-popup .legend-off {
+    background: #fed7d7;
+    border-color: #feb2b2;
+}
+
+.employee-detail-popup .legend-overtime {
+    background: #c6f6d5;
+    border-color: #9ae6b4;
+}
+
+.employee-detail-popup .legend-today {
+    background: white;
+    border: 2px solid #667eea;
+}
+
+.employee-detail-popup .calendar-note {
+    text-align: center;
+    margin-top: 8px;
+}
+
+.employee-detail-popup .calendar-note small {
+    color: #a0aec0;
+    font-size: 11px;
+}
+
+/* Số liệu thống kê */
+.employee-detail-popup .stats-section {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .stats-section .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.employee-detail-popup .stat-card {
+    background: #f8f9fa;
+    padding: 16px 12px;
+    border-radius: 10px;
+    border: 2px solid #e2e8f0;
+    text-align: center;
+}
+
+.employee-detail-popup .stat-card .stat-label {
+    font-size: 11px;
+    color: #718096;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.employee-detail-popup .stat-card .stat-value {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.employee-detail-popup .stat-value.off {
+    color: #c53030;
+}
+
+.employee-detail-popup .stat-value.overtime {
+    color: #276749;
+}
+
+.employee-detail-popup .stat-value.bonus {
+    color: #276749;
+}
+
+.employee-detail-popup .stat-value.penalty {
+    color: #c53030;
+}
+
+/* Lương thực lãnh */
+.employee-detail-popup .actual-salary-section {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .actual-salary-amount {
+    font-size: 28px;
+    font-weight: 800;
+    color: #667eea;
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    border-radius: 16px;
+    border: 3px solid #9ae6b4;
+}
+
+/* Actions section */
+.employee-detail-popup .actions-section {
+    padding: 16px 24px;
+    padding-bottom: 24px;
+}
+
+.employee-detail-popup .actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .employee-detail-popup .basic-info,
+    .employee-detail-popup .calendar-section,
+    .employee-detail-popup .stats-section,
+    .employee-detail-popup .actual-salary-section,
+    .employee-detail-popup .actions-section {
+        padding: 12px 16px;
+    }
+    
+    .employee-detail-popup .stats-section .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    
+    .employee-detail-popup .actual-salary-amount {
+        font-size: 24px;
+        padding: 16px;
+    }
+    
+    /* Mobile layout cho 3 nút */
+    .employee-detail-popup .actions-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+        gap: 8px;
+    }
+    
+    .employee-detail-popup .actions-grid .edit-btn,
+    .employee-detail-popup .actions-grid .discipline-btn {
+        grid-row: 1;
+        min-height: 44px;
+        font-size: 13px;
+    }
+    
+    .employee-detail-popup .actions-grid .close-btn {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        min-height: 44px;
+        margin-top: 4px;
+    }
+    
+    .employee-detail-popup .calendar-legend {
+        gap: 12px;
+    }
+    
+    .employee-detail-popup .legend-item {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 360px) {
+    .employee-detail-popup .stats-section .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .employee-detail-popup .actions-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+    }
+    
+    .employee-detail-popup .actions-grid .edit-btn,
+    .employee-detail-popup .actions-grid .discipline-btn,
+    .employee-detail-popup .actions-grid .close-btn {
+        grid-column: 1;
+        grid-row: auto;
+    }
+    
+    .employee-detail-popup .actions-grid .close-btn {
+        margin-top: 8px;
+    }
+}
+
+/* ===== ACTUAL SALARY ULTRA COMPACT ===== */
+.employee-detail-popup .actual-salary-section {
+    padding: 8px 24px 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .actual-salary-amount {
+    font-size: 18px;
+    font-weight: 800;
+    color: #276749;
+    text-align: center;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    border-radius: 10px;
+    border: 2px solid #9ae6b4;
+}
+
+.employee-detail-popup .actual-salary-label {
+    display: block;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: #718096;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .employee-detail-popup .actual-salary-section {
+        padding: 6px 16px 12px;
+    }
+    
+    .employee-detail-popup .actual-salary-amount {
+        font-size: 16px;
+        padding: 8px 12px;
+    }
+    
+    .employee-detail-popup .actual-salary-label {
+        font-size: 9px;
+    }
+}
+
+/* ===== EMPLOYEE DETAIL POPUP - FULL SCREEN COMPACT ===== */
+.employee-detail-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white; /* Đổi thành nền trắng full màn hình */
+    display: none;
+    z-index: 10000;
+    overflow-y: auto;
+}
+
+.employee-detail-popup.active {
+    display: block;
+}
+
+.employee-detail-popup .popup-content {
+    background: white;
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Header cố định */
+.employee-detail-popup .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+}
+
+.employee-detail-popup .popup-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0;
+    padding-right: 20px;
+}
+
+/* Lương cơ bản - siêu gọn */
+.employee-detail-popup .basic-info {
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .salary-base {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f7fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.employee-detail-popup .salary-label {
+    font-size: 13px;
+    color: #718096;
+    font-weight: 600;
+}
+
+.employee-detail-popup .salary-amount {
+    font-size: 15px;
+    font-weight: 700;
+    color: #667eea;
+}
+
+/* Calendar section - gọn hơn */
+.employee-detail-popup .calendar-section {
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 12px;
+}
+
+.employee-detail-popup .calendar-container {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.employee-detail-popup .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.employee-detail-popup .calendar-day {
+    aspect-ratio: 1;
+    min-height: 28px;
+    font-size: 11px;
+    padding: 1px;
+}
+
+.employee-detail-popup .calendar-day .day-number {
+    font-size: 10px;
+}
+
+.employee-detail-popup .calendar-day .day-icon {
+    font-size: 9px;
+}
+
+.employee-detail-popup .calendar-legend {
+    gap: 8px;
+    margin: 8px 0 4px;
+}
+
+.employee-detail-popup .legend-item {
+    font-size: 10px;
+    gap: 4px;
+}
+
+.employee-detail-popup .calendar-note small {
+    font-size: 10px;
+}
+
+/* Stats section - siêu gọn */
+.employee-detail-popup .stats-section {
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-detail-popup .stats-section .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.employee-detail-popup .stat-card {
+    padding: 8px 6px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.employee-detail-popup .stat-card .stat-label {
+    font-size: 10px;
+    margin-bottom: 4px;
+}
+
+.employee-detail-popup .stat-card .stat-value {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+/* Lương thực lãnh - gọn */
+.employee-detail-popup .actual-salary-section {
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #f0fff4;
+    margin: 0 -20px;
+}
+
+.employee-detail-popup .actual-salary-amount {
+    font-size: 18px;
+    font-weight: 800;
+    color: #276749;
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    border: 2px solid #9ae6b4;
+}
+
+.employee-detail-popup .actual-salary-label {
+    font-size: 10px;
+    margin-bottom: 4px;
+}
+
+/* Actions section - gọn */
+.employee-detail-popup .actions-section {
+    padding: 10px 12px;
+    padding-bottom: 20px;
+}
+
+.employee-detail-popup .actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.employee-detail-popup .action-btn {
+    padding: 10px 8px;
+    font-size: 13px;
+    min-height: 40px;
+    border-radius: 8px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+    .employee-detail-popup .popup-header {
+        padding: 12px 16px;
+    }
+    
+    .employee-detail-popup .basic-info,
+    .employee-detail-popup .calendar-section,
+    .employee-detail-popup .stats-section,
+    .employee-detail-popup .actual-salary-section,
+    .employee-detail-popup .actions-section {
+        padding: 10px 16px;
+    }
+    
+    .employee-detail-popup .actual-salary-section {
+        margin: 0 -14px;
+    }
+    
+    .employee-detail-popup .salary-base {
+        padding: 6px 8px;
+    }
+    
+    .employee-detail-popup .salary-label {
+        font-size: 10px;
+    }
+    
+    .employee-detail-popup .salary-amount {
+        font-size: 12px;
+    }
+    
+    .employee-detail-popup .calendar-day {
+        min-height: 24px;
+    }
+    
+    .employee-detail-popup .actual-salary-amount {
+        font-size: 16px;
+        padding: 8px;
+    }
+    
+    .employee-detail-popup .action-btn {
+        min-height: 38px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 360px) {
+    .employee-detail-popup .stats-section .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .employee-detail-popup .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .employee-detail-popup .stat-card {
+        padding: 6px 4px;
+    }
+    
+    .employee-detail-popup .stat-card .stat-value {
+        font-size: 12px;
+    }
+}
+
+/* Thêm CSS để tránh multiple clicks */
+.attendance-option-btn.processing {
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+}
+
+.attendance-option-btn:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Loading animation */
+.attendance-option-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #667eea;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    transform: translate(-50%, -50%);
+}
+
+/* ===== FIX CLICK AREAS FOR ALL INTERACTIVE ELEMENTS ===== */
+
+/* Đảm bảo tất cả các phần tử clickable đều có đủ click area */
+[data-action] {
+    cursor: pointer;
+    position: relative;
+}
+
+/* Employee cards - fix click area */
+.employee-card {
+    cursor: pointer;
+    position: relative;
+}
+
+.employee-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.employee-card > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Calendar days - fix click area */
+.calendar-day:not(.empty) {
+    cursor: pointer;
+    position: relative;
+}
+
+.calendar-day:not(.empty)::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.calendar-day:not(.empty) > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Action buttons - fix click area */
+.action-btn {
+    cursor: pointer;
+    position: relative;
+}
+
+.action-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.action-btn > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Attendance option buttons - fix click area */
+.attendance-option-btn {
+    cursor: pointer;
+    position: relative;
+}
+
+.attendance-option-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.attendance-option-btn > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Tab buttons - fix click area */
+.tab-btn {
+    cursor: pointer;
+    position: relative;
+}
+
+.tab-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+/* Summary cards clickable - fix click area */
+.summary-card.clickable {
+    cursor: pointer;
+    position: relative;
+}
+
+.summary-card.clickable::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.summary-card.clickable > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Operation items - fix click area */
+.operation-item {
+    cursor: pointer;
+    position: relative;
+}
+
+.operation-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.operation-item > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Employee items - fix click area */
+.employee-item {
+    cursor: pointer;
+    position: relative;
+}
+
+.employee-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.employee-item > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Inventory items - fix click area */
+.inventory-item {
+    cursor: pointer;
+    position: relative;
+}
+
+.inventory-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.inventory-item > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Export rows - fix click area */
+.export-row {
+    cursor: pointer;
+    position: relative;
+}
+
+.export-row::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.export-row > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Buttons trong popup - fix click area */
+.popup-actions .btn {
+    cursor: pointer;
+    position: relative;
+}
+
+.popup-actions .btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.popup-actions .btn > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Month year selector - fix click area */
+.month-year-selector {
+    cursor: pointer;
+    position: relative;
+}
+
+.month-year-selector::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.month-year-selector > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Stat items - fix click area */
+.stat-item {
+    cursor: pointer;
+    position: relative;
+}
+
+.stat-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.stat-item > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* ===== OVERRIDE POINTER-EVENTS FOR SPECIFIC CASES ===== */
+
+/* Đảm bảo các phần tử con không chặn click */
+.employee-card *,
+.calendar-day:not(.empty) *,
+.action-btn *,
+.attendance-option-btn *,
+.tab-btn *,
+.summary-card.clickable *,
+.operation-item *,
+.employee-item *,
+.inventory-item *,
+.export-row *,
+.popup-actions .btn *,
+.month-year-selector *,
+.stat-item * {
+    pointer-events: none;
+}
+
+/* ===== ENSURE MINIMUM TOUCH TARGET SIZE ===== */
+@media (max-width: 768px) {
+    .employee-card,
+    .calendar-day:not(.empty),
+    .action-btn,
+    .attendance-option-btn,
+    .tab-btn,
+    .summary-card.clickable,
+    .operation-item,
+    .employee-item,
+    .inventory-item,
+    .export-row,
+    .popup-actions .btn,
+    .month-year-selector,
+    .stat-item {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* ===== FIX FOR SPECIFIC COMPONENTS ===== */
+
+/* Đảm bảo nút trong employee grid click được */
+#employeeGrid .employee-card {
+    cursor: pointer;
+}
+
+#employeeGrid .employee-card > * {
+    pointer-events: none;
+}
+
+/* Đảm bảo calendar days click được */
+.calendar-grid .calendar-day:not(.empty) {
+    cursor: pointer;
+}
+
+.calendar-grid .calendar-day:not(.empty) > * {
+    pointer-events: none;
+}
+
+/* Đảm bảo action buttons click được */
+.actions-grid .action-btn {
+    cursor: pointer;
+}
+
+.actions-grid .action-btn > * {
+    pointer-events: none;
+}
+
+/* Đảm bảo attendance options click được */
+.attendance-options .attendance-option-btn {
+    cursor: pointer;
+}
+
+.attendance-options .attendance-option-btn > * {
+    pointer-events: none;
+}
