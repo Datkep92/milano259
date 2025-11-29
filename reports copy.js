@@ -1,11 +1,10 @@
-// FIX: Thêm các biến global để theo dõi state
+// CHỈ GIỮ LẠI khai báo biến ở đầu file
 let currentReportDate = formatDate();
 let currentReport = null;
 let isReportsInitialized = false;
-// FIX: Khai báo biến hiển thị danh sách kho
 let showInventoryList = false;
 let showReportsHistory = false;
-let showOperationsHistory = false;
+let showOperationsHistory = false; // <-- CHỈ CÓ 1 DÒNG NÀY
 
 // FIX: Sửa hàm toggle
 function toggleReportsHistoryTab() {
@@ -85,7 +84,13 @@ async function changeDateByInput(dateString) {
 // FIX: Đảm bảo hàm được đặt trong global scope
 window.changeDateByInput = changeDateByInput;
 
-
+// FIX: Sửa hàm initialize - chỉ chạy một lần
+function initializeReportsTab() {
+    if (!isReportsInitialized) {
+        loadReportsTab();
+        isReportsInitialized = true;
+    }
+}
 
 // FIX: Sửa hàm getOrCreateReport - đơn giản hóa
 async function getOrCreateReport(date) {
@@ -241,6 +246,22 @@ function handleReportsInput(e) {
     }
 }
 
+
+// FIX: Sửa hàm setupReportsEventListeners - bind events cho toàn bộ document
+function setupReportsEventListeners() {
+    console.log('Setting up reports event listeners...');
+    
+    // Remove all existing listeners
+    document.removeEventListener('click', handleReportsClick);
+    document.removeEventListener('input', handleReportsInput);
+    
+    // Add new listeners - sử dụng event delegation
+    document.addEventListener('click', handleReportsClick);
+    document.addEventListener('input', handleReportsInput);
+    
+    console.log('Event listeners setup completed');
+}
+
 // FIX: Thêm hàm hiển thị lịch sử xuất kho từ inventory.js
 async function showExportsHistoryPopup() {
     try {
@@ -316,34 +337,29 @@ async function showExportsHistoryPopup() {
         showMessage('❌ Lỗi khi tải lịch sử xuất kho', 'error');
     }
 }
-// FIX: Copy trực tiếp từ tab Kho
+// FIX: Hàm lấy lịch sử xuất kho theo ngày
 async function getExportsHistoryForDate(date) {
     try {
-        // Lấy TẤT CẢ history
         const allHistory = await dbGetAll('inventoryHistory');
-        
-        // Lấy thông tin sản phẩm
         const inventory = await dbGetAll('inventory');
         
-        // Lọc và map giống tab Kho
-        const exportsHistory = allHistory
-            .filter(record => {
-                // Lọc theo type='out' và ngày
-                if (record.type !== 'out') return false;
-                
-                const recordDate = record.date ? record.date.split('T')[0] : '';
-                return recordDate === date;
-            })
-            .map(record => {
-                const product = inventory.find(p => p.productId === record.productId);
-                return {
-                    ...record,
-                    product: product
-                };
-            });
+        // Lọc xuất kho theo ngày
+        const exportsHistory = allHistory.filter(record => {
+            const recordDate = record.date.split('T')[0]; // Lấy phần YYYY-MM-DD
+            return record.type === 'out' && recordDate === date;
+        });
         
-        console.log('📋 Exports history for', date, ':', exportsHistory.length, 'records');
-        return exportsHistory;
+        // Gắn thông tin sản phẩm
+        const exportsWithProducts = exportsHistory.map(record => {
+            const product = inventory.find(p => p.productId === record.productId);
+            return {
+                ...record,
+                product: product
+            };
+        });
+        
+        console.log('📦 Exports history for', date, ':', exportsWithProducts);
+        return exportsWithProducts;
         
     } catch (error) {
         console.error('Error getting exports history:', error);
@@ -359,6 +375,18 @@ function formatTime(dateString) {
         minute: '2-digit'
     });
 }
+// FIX: Thêm hàm debug biến
+function debugToggleVariables() {
+    console.log('=== 🔧 DEBUG TOGGLE VARIABLES ===');
+    console.log('showReportsHistory:', showReportsHistory);
+    console.log('showOperationsHistory:', showOperationsHistory);
+    console.log('showInventoryList:', showInventoryList);
+    console.log('=== END DEBUG ===');
+}
+
+// Gọi debug sau khi render
+setTimeout(debugToggleVariables, 1000);
+// FIX: Sửa hàm renderReportsTab - sửa phần lịch sử mua sắm
 async function renderReportsTab(container, report) {
     const actualReceived = calculateActualReceived(report);
     const totalExpenses = calculateTotalExpenses(report);
@@ -732,157 +760,6 @@ async function showDayExportsPopup(date) {
         showMessage('❌ Lỗi khi tải chi tiết xuất kho', 'error');
     }
 }
-// HÀM CHÍNH: KHỞI TẠO BÁO CÁO (Đảm bảo setup listener chính chỉ chạy một lần)
-function initializeReportsTab() {
-    if (!isReportsInitialized) {
-        loadReportsTab();
-        isReportsInitialized = true;
-        // THÊM: Gọi setupReportsEventListeners ở đây để đảm bảo chỉ chạy MỘT LẦN
-        setupReportsEventListeners();
-    }
-}
-
-// HÀM CHÍNH: SETUP LISTENERS CHO TAB REPORTS (Thêm cleanup cho listener chính)
-function setupReportsEventListeners() {
-    console.log('Setting up reports event listeners...');
-    
-    // Remove all existing listeners
-    document.removeEventListener('click', handleReportsClick);
-    document.removeEventListener('input', handleReportsInput);
-    
-    // Add new listeners - sử dụng event delegation
-    document.addEventListener('click', handleReportsClick);
-    document.addEventListener('input', handleReportsInput);
-    
-    console.log('Event listeners setup completed');
-}
-
-// HÀM SETUP CHO POPUP CHI PHÍ (Thêm cleanup)
-function setupExpensesEventListeners() { 
-    // GỠ BỎ listener cũ
-    document.removeEventListener('click', handleExpensesClick); 
-    // Gắn listener mới
-    document.addEventListener('click', handleExpensesClick); 
-} 
-
-// HÀM SETUP CHO POPUP CHUYỂN KHOẢN (Thêm cleanup)
-function setupTransfersEventListeners() {
-    // GỠ BỎ listener cũ
-    document.removeEventListener('click', handleTransfersClick);
-    // Gắn listener mới
-    document.addEventListener('click', handleTransfersClick);
-}
-
-// HÀM CHÍNH: HIỂN THỊ POPUP MUA SẮM VẬN HÀNH
-function showOperationsPopup(type = 'material') {
-    const popupHTML = `
-        <div class="popup" style="max-width: 500px;">
-            <button class="close-popup" data-action="close-popup">×</button>
-            <h3>🔧 Mua sắm Vận hành</h3>
-            
-            <div class="popup-tabs">
-                <button class="popup-tab-btn" data-tab="materialTab" id="materialTabBtn">🛒 Nguyên liệu / Hàng hóa</button>
-                <button class="popup-tab-btn" data-tab="serviceTab">📝 Dịch vụ / Chi phí khác</button>
-            </div>
-
-            <div id="materialTab" class="popup-tab-content">
-                <div class="form-group">
-                    <label>Tên / Mô tả:</label>
-                    <input type="text" id="materialName" placeholder="Tên nguyên liệu/hàng hóa">
-                </div>
-                <div class="form-group">
-                    <label>Số lượng:</label>
-                    <input type="number" id="materialQuantity" placeholder="Số lượng" min="0">
-                </div>
-                <div class="form-group">
-                    <label>Đơn vị (vd: kg, gói):</label>
-                    <input type="text" id="materialUnit" placeholder="Đơn vị">
-                </div>
-                <div class="form-group">
-                    <label>Thành tiền (tổng):</label>
-                    <input type="number" id="materialAmount" placeholder="Thành tiền" min="0">
-                </div>
-                <button class="btn btn-primary" data-action="save-material" style="width: 100%;"> Lưu - Cập nhật kho </button>
-            </div>
-
-            <div id="serviceTab" class="popup-tab-content">
-                <div class="form-group">
-                    <label>Tên dịch vụ / Chi phí:</label>
-                    <input type="text" id="serviceName" placeholder="Tên dịch vụ/chi phí">
-                </div>
-                <div class="form-group">
-                    <label>Số tiền:</label>
-                    <input type="number" id="serviceAmount" placeholder="Số tiền" min="0">
-                </div>
-                <button class="btn btn-primary" data-action="save-service" style="width: 100%;"> Lưu </button>
-            </div>
-            
-            <div class="popup-actions">
-                <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
-            </div>
-        </div>
-    `;
-    showPopup(popupHTML);
-    setupOperationsEventListeners(type); // Gọi setup với loại tab ban đầu
-}
-
-// HÀM SỬA LỖI CHÍNH: SETUP LISTENERS CHO POPUP MUA SẮM VẬN HÀNH (Đảm bảo cleanup)
-function setupOperationsEventListeners(initialTab) {
-    // Rất quan trọng: GỠ BỎ listener cũ bằng tên hàm để tránh lỗi nhảy nhiều lần
-    document.removeEventListener('click', handleOperationsClick); 
-    
-    // Gắn listener mới
-    document.addEventListener('click', handleOperationsClick);
-
-    // Thiết lập tab active ban đầu
-    const tabName = initialTab === 'material' ? 'materialTab' : 'serviceTab';
-    const initialTabBtn = document.querySelector(`[data-tab="${tabName}"]`);
-    
-    document.querySelectorAll('.popup-tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelectorAll('.popup-tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-
-    if (initialTabBtn) {
-        initialTabBtn.classList.add('active');
-    }
-    const initialTabContent = document.getElementById(tabName);
-    if (initialTabContent) {
-        initialTabContent.classList.add('active');
-    }
-}
-
-// HÀM XỬ LÝ CLICK TRONG POPUP MUA SẮM VẬN HÀNH (Liên quan đến sự kiện)
-function handleOperationsClick(e) {
-    if (e.target.matches('.popup-tab-btn')) {
-        const tabName = e.target.dataset.tab;
-        
-        // Update active tab button
-        document.querySelectorAll('.popup-tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        e.target.classList.add('active');
-        
-        // Update active tab content
-        document.querySelectorAll('.popup-tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        document.getElementById(tabName).classList.add('active');
-        
-    } else if (e.target.matches('[data-action="save-material"]')) {
-        // Giả định hàm saveMaterial đã được định nghĩa ở nơi khác
-        saveMaterial();
-        
-    } else if (e.target.matches('[data-action="save-service"]')) {
-        // Giả định hàm saveService đã được định nghĩa ở nơi khác
-        saveService();
-    }
-}
-function generateOperationId() {
-    return 'op_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-}
 // FIX: Cập nhật hàm handleReportsClick - thêm handler cho lịch sử xuất kho
 function handleReportsClick(e) {
     const action = e.target.dataset.action;
@@ -965,6 +842,37 @@ function handleReportsClick(e) {
     }
 }
 
+
+async function renderExportsTable(currentExports) {
+    try {
+        const inventory = await dbGetAll('inventory');
+        if (!inventory?.length) return '<tr><td colspan="4" class="empty-table"><p>Kho trống</p></td></tr>';
+
+        return inventory.map(product => {
+            const exportItem = currentExports?.find(exp => exp.productId === product.productId);
+            const exportQuantity = exportItem?.quantity || 0;
+            
+            return `
+                <tr class="export-row clickable" data-action="increase-export" data-product-id="${product.productId}">
+                    <td class="product-info">
+                        <div class="product-name-row">
+                            <span class="product-name">${product.name}</span>
+                            <span class="product-unit">${product.unit}</span>
+                        </div>
+                    </td>
+                    <td class="stock-quantity">${product.currentQuantity}</td>
+                    <td class="export-quantity">${exportQuantity}</td>
+                    <td class="export-actions">
+                        <button class="btn btn-danger btn-sm" data-action="decrease-export" 
+                                data-product-id="${product.productId}" ${exportQuantity === 0 ? 'disabled' : ''}>-</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        return '<tr><td colspan="4" class="empty-table"><p>Lỗi tải kho</p></td></tr>';
+    }
+}
     
 // FIX: Hàm fix tất cả số dư đầu kỳ
 async function fixAllOpeningBalances() {
@@ -1117,7 +1025,6 @@ async function updateNextDayOpeningBalance(currentDayClosingBalance, currentDate
         console.error('❌ Error updating next day opening balance:', error);
     }
 }
-
 // FIX: Sửa hoàn toàn hàm formatDate - tránh timezone issues
 function formatDate(date = new Date()) {
     // Nếu là string, xử lý trực tiếp không dùng Date object
@@ -1326,56 +1233,33 @@ async function loadReportsTab() {
     }
 }
 
-// FIX: Sửa hàm updateInventoryFromExports - thêm debug chi tiết
+// FIX: Sửa hàm updateInventoryFromExports - chỉ trừ kho 1 lần
 async function updateInventoryFromExports() {
     try {
-        console.log('📦 Updating inventory from exports...');
-        console.log('Current exports:', currentReport.exports);
-        
-        if (!currentReport.exports || currentReport.exports.length === 0) {
-            console.log('📭 No exports to process');
-            return;
-        }
+        console.log('Updating inventory from exports...');
         
         for (const exportItem of currentReport.exports) {
-            console.log('🔄 Processing export:', exportItem);
-            
             // Tìm sản phẩm trong kho
             const product = await dbGet('inventory', exportItem.productId);
             
             if (product) {
-                console.log('🎯 Found product:', product.name, 'Stock:', product.currentQuantity);
-                
                 // Kiểm tra số lượng xuất có hợp lệ không
                 if (exportItem.quantity > product.currentQuantity) {
-                    console.log('❌ Not enough stock:', {
-                        product: product.name,
-                        stock: product.currentQuantity,
-                        export: exportItem.quantity
-                    });
                     showMessage(`❌ Không đủ tồn kho cho ${product.name}. Tồn: ${product.currentQuantity}, Xuất: ${exportItem.quantity}`, 'error');
-                    continue;
+                    continue; // Bỏ qua sản phẩm này nhưng vẫn xử lý sản phẩm khác
                 }
                 
                 // Cập nhật số lượng tồn kho
                 const newQuantity = product.currentQuantity - exportItem.quantity;
-                const newTotalValue = newQuantity * product.averagePrice;
-                
-                console.log('📊 Updating inventory:', {
-                    product: product.name,
-                    oldQuantity: product.currentQuantity,
-                    newQuantity: newQuantity,
-                    exportQuantity: exportItem.quantity
-                });
                 
                 await dbUpdate('inventory', product.productId, {
                     currentQuantity: newQuantity,
-                    totalValue: newTotalValue,
+                    totalValue: newQuantity * product.averagePrice,
                     updatedAt: new Date().toISOString()
                 });
                 
                 // Ghi lịch sử xuất kho
-                const historyRecord = {
+                await dbAdd('inventoryHistory', {
                     productId: product.productId,
                     type: 'out',
                     quantity: exportItem.quantity,
@@ -1384,208 +1268,107 @@ async function updateInventoryFromExports() {
                     note: `Xuất kho bán hàng - NV: ${getCurrentUser().name} - Ngày: ${formatDateDisplay(currentReportDate)}`,
                     createdBy: getCurrentUser().employeeId,
                     date: new Date().toISOString()
-                };
+                });
                 
-                await dbAdd('inventoryHistory', historyRecord);
-                console.log('📝 Added export history record');
-                
-                console.log(`✅ Updated inventory for ${product.name}: -${exportItem.quantity}`);
+                console.log(`Updated inventory for ${product.name}: -${exportItem.quantity}`);
             } else {
-                console.warn(`❌ Product not found: ${exportItem.productId}`);
+                console.warn(`Product not found: ${exportItem.productId}`);
                 showMessage(`❌ Sản phẩm không tồn tại trong kho: ${exportItem.name}`, 'error');
             }
         }
         
-        console.log('🎉 Finished processing all exports');
-        
     } catch (error) {
-        console.error('❌ Error updating inventory from exports:', error);
-        throw error;
+        console.error('Error updating inventory from exports:', error);
+        throw error; // Ném lỗi để hàm saveCurrentReport bắt
     }
 }
-
-async function debugInventory() {
-    try {
-        console.log('=== 🐛 INVENTORY DEBUG ===');
-        
-        const inventory = await dbGetAll('inventory');
-        console.log('📦 Total inventory items:', inventory.length);
-        
-        inventory.forEach((item, index) => {
-            console.log(`${index + 1}. ${item.name}: ${item.currentQuantity} ${item.unit} - ${formatCurrency(item.totalValue)}`);
-        });
-        
-        const history = await dbGetAll('inventoryHistory');
-        console.log('📜 Total history records:', history.length);
-        
-        const recentHistory = history.slice(-5);
-        recentHistory.forEach((record, index) => {
-            console.log(`   ${record.type === 'in' ? '📥' : '📤'} ${record.date.split('T')[0]} - ${record.quantity} - ${record.note || ''}`);
-        });
-        
-        console.log('=== END DEBUG ===');
-    } catch (error) {
-        console.error('Error debugging inventory:', error);
-    }
-}
-
-async function renderExportsTable(currentExports) {
-    try {
-        const inventory = await dbGetAll('inventory');
-        if (!inventory?.length) return '<tr><td colspan="4" class="empty-table"><p>Kho trống</p></td></tr>';
-
-        return inventory.map(product => {
-            const exportItem = currentExports?.find(exp => exp.productId === product.productId);
-            const exportQuantity = exportItem?.quantity || 0;
-            const hasExport = exportQuantity > 0;
-            
-            return `
-                <tr class="export-row ${hasExport ? 'has-export' : ''}" 
-                    data-product-id="${product.productId}">
-                    <td class="product-info">
-                        <div class="product-name-row">
-                            <span class="product-name">${product.name}</span>
-                            <span class="product-unit">${product.unit}</span>
-                        </div>
-                    </td>
-                    <td class="stock-quantity">${product.currentQuantity}</td>
-                    <td class="export-quantity">${exportQuantity}</td>
-                    <td class="export-actions">
-                        <button class="btn btn-danger btn-sm" data-action="decrease-export" 
-                                data-product-id="${product.productId}" ${exportQuantity === 0 ? 'disabled' : ''}>-</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    } catch (error) {
-        return '<tr><td colspan="4" class="empty-table"><p>Lỗi tải kho</p></td></tr>';
-    }
-}
-
-// FIX: Sửa hàm increaseExport với debug chi tiết
+// FIX: Sửa hàm increaseExport - xử lý trường hợp exports không tồn tại
 async function increaseExport(productId) {
-    console.log('🎯 increaseExport CALLED with productId:', productId);
+    if (!currentReport) return;
     
-    if (!currentReport) {
-        console.error('❌ currentReport is null!');
-        return;
-    }
-
     try {
+        // Đảm bảo exports tồn tại
+        if (!currentReport.exports) {
+            currentReport.exports = [];
+        }
+        
+        // Lấy thông tin sản phẩm từ kho
         const product = await dbGet('inventory', productId);
         if (!product) {
-            console.error('❌ Product not found:', productId);
-            showMessage('❌ Sản phẩm không tồn tại.', 'error');
+            showMessage('❌ Sản phẩm không tồn tại trong kho', 'error');
             return;
         }
 
-        console.log('📦 Product found:', product.name);
-        console.log('📊 Current exports BEFORE:', currentReport.exports);
-
-        // Kiểm tra tồn kho
-        const currentExport = currentReport.exports.find(exp => exp.productId === productId);
-        const exportedQuantity = currentExport ? currentExport.quantity : 0;
-
-        console.log('📈 Export info:', {
-            currentExport: currentExport,
-            exportedQuantity: exportedQuantity,
-            productStock: product.currentQuantity
-        });
-
-        if (exportedQuantity >= product.currentQuantity) {
-            console.log('❌ Not enough stock');
-            showMessage(`❌ Tồn kho chỉ còn ${product.currentQuantity} ${product.unit}. Không thể xuất thêm.`, 'error');
-            return;
-        }
-
-        let updatedExports = [...currentReport.exports];
-        let itemIndex = updatedExports.findIndex(exp => exp.productId === productId);
-
-        if (itemIndex > -1) {
-            // Tăng số lượng
-            updatedExports[itemIndex].quantity += 1;
-            console.log('📈 Increased existing export:', updatedExports[itemIndex]);
+        let exportItem = currentReport.exports.find(exp => exp.productId === productId);
+        
+        if (exportItem) {
+            // Kiểm tra không vượt quá tồn kho
+            if (exportItem.quantity >= product.currentQuantity) {
+                showMessage(`❌ Không đủ tồn kho. Tồn kho: ${product.currentQuantity}`, 'error');
+                return;
+            }
+            exportItem.quantity += 1;
         } else {
-            // Thêm mới
-            const newExport = {
+            // Tạo mới với số lượng 1
+            exportItem = {
                 productId: productId,
-                quantity: 1,
                 name: product.name,
-                unit: product.unit,
-                exportDate: currentReportDate,
-                createdAt: new Date().toISOString()
+                quantity: 1,
+                exportedAt: new Date().toISOString()
             };
-            updatedExports.push(newExport);
-            console.log('🆕 Added new export:', newExport);
+            currentReport.exports.push(exportItem);
         }
         
-        // Cập nhật currentReport
-        currentReport.exports = updatedExports;
-        console.log('📦 Current exports AFTER:', currentReport.exports);
-
-        // Cập nhật database
-        console.log('💾 Saving to database...');
         await dbUpdate('reports', currentReport.reportId, {
-            exports: updatedExports,
-            updatedBy: getCurrentUser().employeeId,
+            exports: currentReport.exports,
             updatedAt: new Date().toISOString()
         });
         
-        console.log('✅ Database updated successfully');
+        // FIX: Thêm hiệu ứng visual feedback
+        const row = document.querySelector(`[data-product-id="${productId}"]`);
+        if (row) {
+            row.classList.add('clicked');
+            setTimeout(() => row.classList.remove('clicked'), 300);
+        }
         
-        // Kiểm tra lại từ database
-        const reportFromDB = await dbGet('reports', currentReport.reportId);
-        console.log('🔄 Report from DB after update:', reportFromDB.exports);
-
-        // Tải lại tab
-        console.log('🔄 Reloading reports tab...');
+        showMessage(`📦 Đã thêm ${product.name} vào xuất kho`, 'success');
         loadReportsTab();
-
+        
     } catch (error) {
-        console.error('❌ Error in increaseExport:', error);
-        showMessage('❌ Lỗi khi tăng số lượng xuất kho', 'error');
+        console.error('Error increasing export:', error);
+        showMessage('❌ Lỗi khi thêm xuất kho', 'error');
     }
 }
 
-// BỔ SUNG: Hàm giảm số lượng xuất kho (decreaseExport)
+// FIX: Sửa hàm decreaseExport - cho phép giảm xuất kho sau khi lưu
 async function decreaseExport(productId) {
     if (!currentReport) return;
-
+    
     try {
-        let updatedExports = [...currentReport.exports];
-        let itemIndex = updatedExports.findIndex(exp => exp.productId === productId);
-
-        if (itemIndex > -1) {
-            if (updatedExports[itemIndex].quantity > 1) {
-                // Giảm số lượng
-                updatedExports[itemIndex].quantity -= 1;
+        const exportItem = currentReport.exports.find(exp => exp.productId === productId);
+        
+        if (exportItem) {
+            if (exportItem.quantity > 1) {
+                exportItem.quantity -= 1;
             } else {
-                // Xóa khỏi danh sách nếu số lượng = 1
-                updatedExports.splice(itemIndex, 1);
+                // Xóa khỏi báo cáo nếu số lượng = 0
+                currentReport.exports = currentReport.exports.filter(exp => exp.productId !== productId);
             }
             
-            // Cập nhật currentReport trong bộ nhớ
-            currentReport.exports = updatedExports;
-
-            // Cập nhật database
             await dbUpdate('reports', currentReport.reportId, {
-                exports: updatedExports,
-                updatedBy: getCurrentUser().employeeId,
+                exports: currentReport.exports,
                 updatedAt: new Date().toISOString()
             });
-
-            // Tải lại tab để refresh UI và tổng kết
+            
+            showMessage(`📦 Đã giảm ${exportItem.name} trong xuất kho`, 'success');
             loadReportsTab();
-        } else {
-            showMessage('Không có sản phẩm này trong danh sách xuất kho.', 'info');
         }
-
+        
     } catch (error) {
         console.error('Error decreasing export:', error);
-        showMessage('❌ Lỗi khi giảm số lượng xuất kho', 'error');
+        showMessage('❌ Lỗi khi giảm xuất kho', 'error');
     }
 }
-
 // FIX: Thêm hàm addFromInventory - click vào sản phẩm trong kho để thêm xuất kho
 async function addFromInventory(productId) {
     if (!currentReport) return;
@@ -1843,155 +1626,20 @@ function calculateTotalExports(report) {
     return report.exports.reduce((total, exportItem) => total + (exportItem.quantity || 0), 0);
 }
 
-async function calculateOperationsTotal(type, dateKey) {
+async function calculateOperationsTotal(type, date) {
     try {
-        // Giả định dbGetAll('operations') trả về tất cả bản ghi
         const operations = await dbGetAll('operations');
-        const total = operations
-            // Lọc theo loại (material/service) và ngày
-            .filter(op => op.type === type && op.dateKey === dateKey)
-            .reduce((sum, op) => sum + (op.amount || 0), 0);
-        return total;
+        return operations
+            .filter(op => op.type === type && op.date === date)
+            .reduce((total, op) => total + (op.amount || 0), 0);
     } catch (error) {
         console.error('Error calculating operations total:', error);
         return 0;
     }
 }
 
-async function saveMaterial() {
-    const name = document.getElementById('materialName').value.trim();
-    const quantity = parseFloat(document.getElementById('materialQuantity').value);
-    const unit = document.getElementById('materialUnit').value.trim();
-    const amount = parseFloat(document.getElementById('materialAmount').value);
-
-    if (!name || isNaN(quantity) || quantity <= 0 || isNaN(amount) || amount <= 0) {
-        showMessage('Vui lòng nhập đầy đủ Tên, Số lượng và Thành tiền hợp lệ.', 'error');
-        return;
-    }
-
-    try {
-        const currentUser = getCurrentUser();
-        const operationId = generateOperationId();
-        const isoDate = new Date().toISOString();
-        const dateKey = currentReportDate; // YYYY-MM-DD
-
-        // 1. Tạo Operation Record
-        const operationRecord = {
-            operationId: operationId,
-            date: isoDate,
-            dateKey: dateKey,
-            type: 'material',
-            name: name,
-            quantity: quantity,
-            unit: unit,
-            amount: amount,
-            createdBy: currentUser.employeeId,
-            createdAt: isoDate
-        };
-
-        await dbAdd('operations', operationRecord);
-
-        // 2. Cập nhật Kho hàng (giả định store 'inventory' và 'inventoryHistory' tồn tại)
-        
-        // Tìm sản phẩm theo tên
-        const inventoryItems = await dbGetAll('inventory');
-        let product = inventoryItems.find(p => p.name.toLowerCase() === name.toLowerCase());
-        
-        if (!product) {
-             // Tạo sản phẩm mới nếu chưa có
-             const newProductId = 'prod_' + Math.random().toString(36).substring(2, 9);
-             product = {
-                 productId: newProductId,
-                 name: name,
-                 unit: unit,
-                 currentQuantity: 0,
-                 minStock: 0,
-                 averagePrice: 0,
-                 totalValue: 0
-             };
-             await dbAdd('inventory', product);
-        }
-
-        // Tạo bản ghi lịch sử nhập kho
-        const historyRecord = {
-            productId: product.productId,
-            type: 'in', // Loại nhập kho
-            quantity: quantity,
-            unitPrice: amount / quantity,
-            totalPrice: amount,
-            note: `Mua sắm vận hành: ${name}`,
-            createdBy: currentUser.employeeId,
-            date: isoDate
-        };
-        await dbAdd('inventoryHistory', historyRecord);
-        
-        // Cập nhật tồn kho và giá trị
-        const totalQuantityBefore = product.currentQuantity;
-        const totalValueBefore = product.totalValue;
-        
-        const newTotalQuantity = totalQuantityBefore + quantity;
-        const newTotalValue = totalValueBefore + amount;
-        
-        // Tính lại giá trung bình
-        const newAveragePrice = newTotalQuantity > 0 ? newTotalValue / newTotalQuantity : 0;
-        
-        await dbUpdate('inventory', product.productId, {
-            currentQuantity: newTotalQuantity,
-            totalValue: newTotalValue,
-            averagePrice: newAveragePrice,
-            updatedAt: isoDate
-        });
 
 
-        showMessage('✅ Đã lưu mua sắm Nguyên liệu và cập nhật kho', 'success');
-        closePopup();
-        loadReportsTab();
-
-    } catch (error) {
-        console.error('Error saving material operation:', error);
-        showMessage('❌ Lỗi khi lưu mua sắm Nguyên liệu', 'error');
-    }
-}
-async function saveService() {
-    const name = document.getElementById('serviceName').value.trim();
-    const amount = parseFloat(document.getElementById('serviceAmount').value);
-
-    if (!name || isNaN(amount) || amount <= 0) {
-        showMessage('Vui lòng nhập đầy đủ Tên Dịch vụ và Số tiền hợp lệ.', 'error');
-        return;
-    }
-
-    try {
-        const currentUser = getCurrentUser();
-        const operationId = generateOperationId();
-        const isoDate = new Date().toISOString();
-        const dateKey = currentReportDate; // YYYY-MM-DD
-
-        // 1. Tạo Operation Record
-        const operationRecord = {
-            operationId: operationId,
-            date: isoDate,
-            dateKey: dateKey,
-            type: 'service',
-            name: name,
-            quantity: 0,
-            unit: '',
-            amount: amount,
-            createdBy: currentUser.employeeId,
-            createdAt: isoDate
-        };
-
-        await dbAdd('operations', operationRecord);
-
-        showMessage('✅ Đã lưu mua sắm Dịch vụ', 'success');
-        closePopup();
-        loadReportsTab();
-
-    } catch (error) {
-        console.error('Error saving service operation:', error);
-        showMessage('❌ Lỗi khi lưu mua sắm Dịch vụ', 'error');
-    }
-}
 
 // FIX: Sửa hàm showExpensesPopup - thêm dropdown autocomplete
 async function showExpensesPopup() {
@@ -2070,6 +1718,10 @@ async function showExpensesPopup() {
     setupExpensesEventListeners();
 }
 
+function setupExpensesEventListeners() {
+    document.removeEventListener('click', handleExpensesClick);
+    document.addEventListener('click', handleExpensesClick);
+}
 
 function handleExpensesClick(e) {
     if (e.target.matches('[data-action="add-expense"]')) {
@@ -2264,6 +1916,10 @@ async function addNewTransfer() {
     }
 }
 
+function setupTransfersEventListeners() {
+    document.removeEventListener('click', handleTransfersClick);
+    document.addEventListener('click', handleTransfersClick);
+}
 
 function handleTransfersClick(e) {
     if (e.target.matches('[data-action="add-transfer"]')) {
@@ -2290,6 +1946,91 @@ async function deleteTransfer(transferId) {
         console.error('Error deleting transfer:', error);
         showMessage('Lỗi khi xóa chuyển khoản', 'error');
     }
+}
+
+// Operations popup
+async function showOperationsPopup() {
+    if (!isAdmin()) {
+        showMessage('Chỉ quản trị viên được thao tác', 'error');
+        return;
+    }
+    
+    const popupHTML = `
+        <div class="popup">
+            <button class="close-popup" data-action="close-popup">×</button>
+            <h3>🔧 Mua sắm vận hành</h3>
+            
+            <div class="popup-tabs">
+                <button class="popup-tab-btn active" data-tab="material">Nguyên liệu </button>
+                <button class="popup-tab-btn" data-tab="service">Dịch vụ </button>
+            </div>
+            
+            <div id="materialTab" class="popup-tab-content active">
+                <div class="form-group">
+                    <label>Tên nguyên liệu:</label>
+                    <input type="text" id="materialName" placeholder="Tên nguyên liệu">
+                </div>
+                <div class="form-group">
+                    <label>Đơn vị tính:</label>
+                    <input type="text" id="materialUnit" placeholder="VD: kg, hộp">
+                </div>
+                <div class="form-group">
+                    <label>Số lượng:</label>
+                    <input type="number" id="materialQuantity" placeholder="Số lượng">
+                </div>
+                <div class="form-group">
+                    <label>Thành tiền:</label>
+                    <input type="number" id="materialAmount" placeholder="Thành tiền">
+                </div>
+                <button class="btn btn-primary" data-action="save-material" style="width: 100%;">
+                    Lưu - Cập nhật kho
+                </button>
+            </div>
+            
+            <div id="serviceTab" class="popup-tab-content">
+                <div class="form-group">
+                    <label>Tên dịch vụ:</label>
+                    <input type="text" id="serviceName" placeholder="Tên dịch vụ">
+                </div>
+                <div class="form-group">
+                    <label>Số tiền:</label>
+                    <input type="number" id="serviceAmount" placeholder="Số tiền">
+                </div>
+                <button class="btn btn-primary" data-action="save-service" style="width: 100%;">
+                    Lưu
+                </button>
+            </div>
+            
+            <div class="popup-actions">
+                <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
+            </div>
+        </div>
+    `;
+    
+    showPopup(popupHTML);
+    setupOperationsEventListeners();
+}
+
+function setupOperationsEventListeners() {
+    // Tab switching
+    document.querySelectorAll('.popup-tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.popup-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.popup-tab-content').forEach(c => c.classList.remove('active'));
+            
+            this.classList.add('active');
+            document.getElementById(this.dataset.tab + 'Tab').classList.add('active');
+        });
+    });
+    
+    // Save actions
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('[data-action="save-material"]')) {
+            saveMaterialOperation();
+        } else if (e.target.matches('[data-action="save-service"]')) {
+            saveServiceOperation();
+        }
+    });
 }
 
 async function saveMaterialOperation() {
@@ -2361,11 +2102,8 @@ async function saveServiceOperation() {
     }
 }
 
-// FIX: Sửa hàm updateInventoryForMaterial trong reports.js
 async function updateInventoryForMaterial(name, unit, quantity, amount) {
     try {
-        console.log('🛒 Updating inventory for material:', { name, unit, quantity, amount });
-        
         // Find existing product or create new
         const products = await dbGetAll('inventory');
         let product = products.find(p => p.name === name && p.unit === unit);
@@ -2376,26 +2114,15 @@ async function updateInventoryForMaterial(name, unit, quantity, amount) {
             const newTotalValue = product.totalValue + amount;
             const newAveragePrice = newTotalValue / newQuantity;
             
-            console.log('📦 Updating existing product:', {
-                oldQuantity: product.currentQuantity,
-                newQuantity: newQuantity,
-                oldValue: product.totalValue,
-                newValue: newTotalValue
-            });
-            
             await dbUpdate('inventory', product.productId, {
                 currentQuantity: newQuantity,
                 totalValue: newTotalValue,
                 averagePrice: newAveragePrice,
                 updatedAt: new Date().toISOString()
             });
-            
-            console.log('✅ Updated existing product');
         } else {
             // Create new product
             const productId = 'SP' + Date.now().toString().slice(-4);
-            console.log('🆕 Creating new product:', { productId, name, unit, quantity, amount });
-            
             await dbAdd('inventory', {
                 productId: productId,
                 name: name,
@@ -2407,28 +2134,9 @@ async function updateInventoryForMaterial(name, unit, quantity, amount) {
                 createdBy: getCurrentUser().employeeId,
                 createdAt: new Date().toISOString()
             });
-            
-            console.log('✅ Created new product');
         }
-        
-        // Add to inventory history
-        const historyRecord = {
-            productId: product ? product.productId : productId,
-            type: 'in',
-            quantity: quantity,
-            unitPrice: amount / quantity,
-            totalPrice: amount,
-            note: `Nhập kho từ mua nguyên liệu - ${name}`,
-            createdBy: getCurrentUser().employeeId,
-            date: new Date().toISOString()
-        };
-        
-        await dbAdd('inventoryHistory', historyRecord);
-        console.log('📝 Added inventory history record');
-        
     } catch (error) {
-        console.error('❌ Error updating inventory:', error);
-        throw error;
+        console.error('Error updating inventory:', error);
     }
 }
 

@@ -3027,3 +3027,476 @@ datalist option {
         min-width: 100%;
     }
 }
+
+/* THÊM VÀO style.css - Notification styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    min-width: 300px;
+    max-width: 500px;
+    animation: slideIn 0.3s ease;
+    border-left: 4px solid #17a2b8;
+}
+
+.notification-success { 
+    border-left: 4px solid #28a745; 
+    background: #f8fff9;
+}
+
+.notification-error { 
+    border-left: 4px solid #dc3545; 
+    background: #fff5f5;
+}
+
+.notification-info { 
+    border-left: 4px solid #17a2b8; 
+    background: #f0f9ff;
+}
+
+.notification-content {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-message {
+    flex: 1;
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #6c757d;
+    margin-left: 10px;
+}
+
+.notification-close:hover {
+    color: #495057;
+}
+
+@keyframes slideIn {
+    from { 
+        transform: translateX(100%); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateX(0); 
+        opacity: 1; 
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .notification {
+        left: 20px;
+        right: 20px;
+        min-width: auto;
+        max-width: none;
+    }
+}
+
+    .exports-history-section {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .exports-history-section h4 {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        color: #333;
+    }
+    
+    .exports-history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .export-history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 8px;
+        background: white;
+        border-radius: 6px;
+        font-size: 13px;
+    }
+    
+    .export-product {
+        flex: 1;
+    }
+    
+    .export-quantity {
+        color: #dc3545;
+        font-weight: bold;
+        margin: 0 8px;
+    }
+    
+    .export-time {
+        color: #666;
+        font-size: 12px;
+    }
+    
+    .exports-history-total {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #ddd;
+        text-align: center;
+        font-size: 13px;
+        font-weight: bold;
+        color: #28a745;
+    }
+
+
+    .popup input[type="text"]:focus,
+    .popup input[type="number"]:focus {
+        outline: none;
+        border-color: #007bff;
+    }
+
+    /* Table trong popup */
+    .popup .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        font-size: 13px;
+    }
+
+    .popup .data-table th {
+        background: #f8f9fa;
+        padding: 10px;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+    }
+
+    .popup .data-table td {
+        padding: 10px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .popup .data-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Nút actions trong popup */
+    .popup-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+    }
+
+    /* Note trong popup */
+    .transfer-note, .expense-note {
+        background: #e7f3ff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin: 10px 0;
+        font-size: 12px;
+        color: #0066cc;
+        border-left: 3px solid #007bff;
+    }
+
+    /* Datalist styling */
+    .popup datalist {
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    /* Responsive cho mobile */
+    @media (max-width: 480px) {
+        .popup {
+            width: 95%;
+            padding: 15px;
+        }
+
+        .add-expense-form, .add-transfer-form {
+            gap: 8px;
+        }
+
+        .popup input[type="text"],
+        .popup input[type="number"] {
+            padding: 8px;
+            font-size: 13px;
+        }
+
+        .popup .data-table {
+            font-size: 12px;
+        }
+
+        .popup .data-table th,
+        .popup .data-table td {
+            padding: 6px 4px;
+        }
+
+        .popup-actions {
+            flex-direction: column;
+        }
+
+        .popup-actions .btn {
+            width: 100%;
+            margin: 2px 0;
+        }
+    }
+
+    /* Popup lớn hơn cho table */
+    .popup[style*="max-width: 800px"] {
+        width: 95%;
+        max-width: 800px;
+    }
+
+    /* Loading state */
+    .popup-loading {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    /* Success/Error messages trong popup */
+    .popup-message {
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 10px 0;
+        font-size: 13px;
+    }
+
+    .popup-message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .popup-message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+.popup {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .close-popup {
+        float: right;
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #666;
+    }
+
+    /* Form thêm mới */
+    .add-expense-form, .add-transfer-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 8px;
+        margin-bottom: 15px;
+        align-items: end;
+    }
+
+    .expense-input-container, .transfer-input-container {
+        grid-column: 1 / span 2;
+    }
+
+    /* Input */
+    #expenseName, #expenseAmount,
+    #transferContent, #transferAmount {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Table */
+    .popup .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    .popup .data-table th {
+        background: #f5f5f5;
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .popup .data-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    /* Nút actions */
+    .popup-actions {
+        text-align: right;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+    }
+
+    /* Note */
+    .transfer-note {
+        background: #f0f8ff;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 10px 0;
+        font-size: 12px;
+        color: #666;
+        border-left: 3px solid #1890ff;
+    }
+
+    /* Mobile */
+    @media (max-width: 480px) {
+        .add-expense-form, .add-transfer-form {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .expense-input-container, .transfer-input-container {
+            grid-column: 1;
+        }
+        
+        .popup {
+            padding: 15px;
+        }
+        
+        .popup .data-table {
+            font-size: 12px;
+        }
+        
+        .popup .data-table th,
+        .popup .data-table td {
+            padding: 6px 8px;
+        }
+    }
+
+    /* Header cực gọn - ép buộc chiều cao */
+.header {
+    background: #ffffff;
+    padding: 2px 8px !important;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+}
+
+.user-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    height: 40px !important;
+}
+
+.tab-btn {
+    flex: 1;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    padding: 4px 2px !important;
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    height: 36px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+}
+
+.tab-btn.active {
+    background: #85792c;
+}
+
+/* Mobile nhỏ */
+@media (max-width: 380px) {
+    .header {
+        padding: 1px 6px !important;
+        height: 42px !important;
+    }
+    
+    .user-info {
+        height: 38px !important;
+    }
+    
+    .tab-btn {
+        font-size: 13px;
+        min-height: 34px !important;
+        max-height: 34px !important;
+        height: 34px !important;
+    }
+}
+
+/* Force override mọi CSS khác */
+#app .header,
+body .header,
+html .header {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    padding: 2px 8px !important;
+}
+
+#app .tab-btn,
+body .tab-btn, 
+html .tab-btn {
+    min-height: 36px !important;
+    max-height: 36px !important;
+    height: 36px !important;
+    padding: 4px 2px !important;
+    margin: 0 !important;
+}
+.employee-item {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.employee-item:hover {
+    background: #f5f5f5;
+    border-color: #007bff;
+}
+
+.employee-item .item-info,
+.employee-item .item-actions {
+    pointer-events: none; /* Quan trọng: ngăn chặn sự kiện click trên các phần tử con */
+}
+
+.employee-item .item-actions span:last-child {
+    font-size: 18px;
+    color: #666;
+}
+

@@ -316,34 +316,29 @@ async function showExportsHistoryPopup() {
         showMessage('❌ Lỗi khi tải lịch sử xuất kho', 'error');
     }
 }
-// FIX: Copy trực tiếp từ tab Kho
+// FIX: Hàm lấy lịch sử xuất kho theo ngày
 async function getExportsHistoryForDate(date) {
     try {
-        // Lấy TẤT CẢ history
         const allHistory = await dbGetAll('inventoryHistory');
-        
-        // Lấy thông tin sản phẩm
         const inventory = await dbGetAll('inventory');
         
-        // Lọc và map giống tab Kho
-        const exportsHistory = allHistory
-            .filter(record => {
-                // Lọc theo type='out' và ngày
-                if (record.type !== 'out') return false;
-                
-                const recordDate = record.date ? record.date.split('T')[0] : '';
-                return recordDate === date;
-            })
-            .map(record => {
-                const product = inventory.find(p => p.productId === record.productId);
-                return {
-                    ...record,
-                    product: product
-                };
-            });
+        // Lọc xuất kho theo ngày
+        const exportsHistory = allHistory.filter(record => {
+            const recordDate = record.date.split('T')[0]; // Lấy phần YYYY-MM-DD
+            return record.type === 'out' && recordDate === date;
+        });
         
-        console.log('📋 Exports history for', date, ':', exportsHistory.length, 'records');
-        return exportsHistory;
+        // Gắn thông tin sản phẩm
+        const exportsWithProducts = exportsHistory.map(record => {
+            const product = inventory.find(p => p.productId === record.productId);
+            return {
+                ...record,
+                product: product
+            };
+        });
+        
+        console.log('📦 Exports history for', date, ':', exportsWithProducts);
+        return exportsWithProducts;
         
     } catch (error) {
         console.error('Error getting exports history:', error);
@@ -482,17 +477,27 @@ async function renderReportsTab(container, report) {
             </div>
         ` : ''}
 
-        <!-- PHẦN MUA SẮM VẬN HÀNH -->
-        <div class="section">
-            <h2>🔧 Mua sắm vận hành</h2>
-            <div class="operations-summary">
-                <div class="operation-item clickable" data-action="show-operations" data-type="material">
-                    <span>•</span><span>Nguyên liệu ${formatCurrency(await calculateOperationsTotal('material', report.date))} ›</span>
-                </div>
-                <div class="operation-item clickable" data-action="show-operations" data-type="service">
-                    <span>•</span><span>Dịch vụ ${formatCurrency(await calculateOperationsTotal('service', report.date))} ›</span>
-                </div>
+       <div class="section">
+            <div class="section-header-with-action">
+                <h2>🔧 Mua sắm vận hành</h2>
+                <button class="btn btn-outline btn-sm" data-action="toggle-operations-history">
+                   ${showOperationsHistory ? '🛒 Lịch sử Mua sắm👁‍🗨' : '🛒 Lịch sử Mua sắm'}
+                </button>
+                <button class="btn btn-primary btn-sm" data-action="show-operations-popup">
+                    + Thêm
+                </button>
             </div>
+            
+            ${showOperationsHistory ? await renderOperationsHistory() : `
+                <div class="operations-summary">
+                    <div class="operation-item clickable" data-action="show-operations" data-type="material">
+                        <span>•</span><span>Nguyên liệu ${formatCurrency(await calculateOperationsTotal('material', report.date))} ›</span>
+                    </div>
+                    <div class="operation-item clickable" data-action="show-operations" data-type="service">
+                        <span>•</span><span>Dịch vụ ${formatCurrency(await calculateOperationsTotal('service', report.date))} ›</span>
+                    </div>
+                </div>
+            `}
         </div>
 
         <!-- PHẦN LỊCH SỬ BÁO CÁO -->
@@ -742,19 +747,28 @@ function initializeReportsTab() {
     }
 }
 
-// HÀM CHÍNH: SETUP LISTENERS CHO TAB REPORTS (Thêm cleanup cho listener chính)
+// Thêm vào hàm setupReportsEventListeners
 function setupReportsEventListeners() {
-    console.log('Setting up reports event listeners...');
-    
-    // Remove all existing listeners
-    document.removeEventListener('click', handleReportsClick);
-    document.removeEventListener('input', handleReportsInput);
-    
-    // Add new listeners - sử dụng event delegation
-    document.addEventListener('click', handleReportsClick);
-    document.addEventListener('input', handleReportsInput);
-    
-    console.log('Event listeners setup completed');
+    document.addEventListener('click', function(e) {
+        // Click vào toàn bộ hàng xuất kho
+        if (e.target.closest('.export-row')) {
+            const row = e.target.closest('.export-row');
+            const productId = row.dataset.productId;
+            
+            // Chỉ tăng nếu không click vào nút giảm
+            if (!e.target.closest('.export-actions')) {
+                // Hiệu ứng visual feedback
+                row.classList.add('clicked');
+                setTimeout(() => {
+                    row.classList.remove('clicked');
+                }, 400);
+                
+                increaseExport(productId);
+            }
+        }
+        
+        // Các event listeners khác giữ nguyên...
+    });
 }
 
 // HÀM SETUP CHO POPUP CHI PHÍ (Thêm cleanup)
@@ -883,85 +897,39 @@ function handleOperationsClick(e) {
 function generateOperationId() {
     return 'op_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
 }
-// FIX: Cập nhật hàm handleReportsClick - thêm handler cho lịch sử xuất kho
-function handleReportsClick(e) {
-    const action = e.target.dataset.action;
-    const target = e.target;
-
-    console.log('🔍 Click detected - Action:', action, 'Target:', target);
-
-    if (action === "toggle-reports-history") {
-        toggleReportsHistoryTab();
-        return;
-    }
-    
-    if (action === "toggle-operations-history") {
-        toggleOperationsHistory();
-        return;
-    }
-    
-    if (action === "toggle-inventory-list") {
-        toggleInventoryList();
-        return;
-    }
-    if (action === "clear-all-data") clearAllData();
-    else if (action === "clear-device-id") clearDeviceId();
-    else if (action === "toggle-operations-history") toggleOperationsHistory();
-    else if (action === "debug-exports") debugExportsDetailed();
-    else if (action === "add-sample-exports") addSampleExports();
-
-    
-    // FIX: Thêm handler cho lịch sử xuất kho
-    if (action === "show-exports-history") {
-        console.log('📦 Opening exports history popup...');
-        showExportsHistoryPopup();
-        return;
-    }
-    
-    // FIX: Xử lý click vào dòng export
-    if (target.closest('.export-row') && target.dataset.action !== 'decrease-export') {
-        const productId = target.closest('.export-row').dataset.productId;
-        if (productId) increaseExport(productId);
-        return;
-    }
-    
-    if (action === "show-expenses") {
-        console.log('💰 Opening expenses popup...');
+// SỬA: Hàm handleReportsClick - Bổ sung xử lý cho "show-operations"
+// SỬA: Hàm handleReportsClick - Bổ sung xử lý click để tăng xuất kho
+async function handleReportsClick(e) {
+    if (e.target.matches('[data-action="show-expenses"]')) {
         showExpensesPopup();
-    } 
-    else if (action === "show-transfers") {
-        console.log('🏦 Opening transfers popup...');
+    } else if (e.target.matches('[data-action="show-transfers"]')) {
         showTransfersPopup();
-    } 
-    else if (action === "save-report") {
+    } else if (e.target.matches('[data-action="save-report"]')) {
         saveCurrentReport();
-    } 
-    else if (action === "copy-report") {
-        copyReportToClipboard();
-    } 
-    else if (action === "share-zalo") {
+    } else if (e.target.matches('[data-action="share-zalo"]')) {
         shareReportToZalo();
-    } 
-   
-    else if (action === "increase-export") {
-        const productId = target.dataset.productId || target.closest('[data-action="increase-export"]')?.dataset.productId;
-        if (productId) increaseExport(productId);
-    }
-    else if (action === "decrease-export") {
-        const productId = target.dataset.productId || target.closest('[data-action="decrease-export"]')?.dataset.productId;
-        if (productId) decreaseExport(productId);
-    }
-    else if (action === "show-operations") {
-        console.log('🔧 Opening operations popup...');
-        const type = target.dataset.type || target.closest('[data-action="show-operations"]')?.dataset.type;
-        console.log('Operations type:', type);
+    } else if (e.target.matches('[data-action="toggle-inventory-list"]')) {
+        toggleInventoryList();
+    } else if (e.target.matches('[data-action="toggle-reports-history"]')) {
+        toggleReportsHistoryTab();
+    } else if (e.target.matches('[data-action="toggle-operations-history"]')) {
+        toggleOperationsHistory();
+    } else if (e.target.matches('[data-action="show-operations-popup"]')) {
         showOperationsPopup();
-    }
-    else if (action === "show-reports-history") {
-        showReportsHistoryPopup();
-    }
-    else if (action === "show-operations-history") {
-        showOperationsHistoryPopup();
+    } else if (e.target.matches('[data-action="show-operations"]')) {
+        const type = e.target.dataset.type;
+        showOperationsPopup(type); 
+    // BỔ SUNG FIX LỖI: Xử lý khi click vào ô Tên sản phẩm (data-action="click-to-increase-export")
+    } else if (e.target.matches('[data-action="click-to-increase-export"]')) {
+        increaseExport(e.target.dataset.productId);
+    } else if (e.target.matches('[data-action="edit-report"]')) {
+        loadReportsTab(e.target.dataset.date);
+    } else if (e.target.matches('[data-action="delete-report"]')) {
+        deleteReport(e.target.dataset.date);
+    } else if (e.target.matches('[data-action="increase-export"]')) {
+        increaseExport(e.target.dataset.productId);
+    } else if (e.target.matches('[data-action="decrease-export"]')) {
+        decreaseExport(e.target.dataset.productId);
     }
 }
 
@@ -1117,7 +1085,6 @@ async function updateNextDayOpeningBalance(currentDayClosingBalance, currentDate
         console.error('❌ Error updating next day opening balance:', error);
     }
 }
-
 // FIX: Sửa hoàn toàn hàm formatDate - tránh timezone issues
 function formatDate(date = new Date()) {
     // Nếu là string, xử lý trực tiếp không dùng Date object
@@ -1462,38 +1429,22 @@ async function renderExportsTable(currentExports) {
     }
 }
 
-// FIX: Sửa hàm increaseExport với debug chi tiết
+// BỔ SUNG: Hàm tăng số lượng xuất kho (increaseExport)
 async function increaseExport(productId) {
-    console.log('🎯 increaseExport CALLED with productId:', productId);
-    
-    if (!currentReport) {
-        console.error('❌ currentReport is null!');
-        return;
-    }
+    if (!currentReport) return;
 
     try {
         const product = await dbGet('inventory', productId);
         if (!product) {
-            console.error('❌ Product not found:', productId);
             showMessage('❌ Sản phẩm không tồn tại.', 'error');
             return;
         }
-
-        console.log('📦 Product found:', product.name);
-        console.log('📊 Current exports BEFORE:', currentReport.exports);
 
         // Kiểm tra tồn kho
         const currentExport = currentReport.exports.find(exp => exp.productId === productId);
         const exportedQuantity = currentExport ? currentExport.quantity : 0;
 
-        console.log('📈 Export info:', {
-            currentExport: currentExport,
-            exportedQuantity: exportedQuantity,
-            productStock: product.currentQuantity
-        });
-
         if (exportedQuantity >= product.currentQuantity) {
-            console.log('❌ Not enough stock');
             showMessage(`❌ Tồn kho chỉ còn ${product.currentQuantity} ${product.unit}. Không thể xuất thêm.`, 'error');
             return;
         }
@@ -1504,45 +1455,31 @@ async function increaseExport(productId) {
         if (itemIndex > -1) {
             // Tăng số lượng
             updatedExports[itemIndex].quantity += 1;
-            console.log('📈 Increased existing export:', updatedExports[itemIndex]);
         } else {
             // Thêm mới
-            const newExport = {
+            updatedExports.push({
                 productId: productId,
                 quantity: 1,
-                name: product.name,
-                unit: product.unit,
-                exportDate: currentReportDate,
-                createdAt: new Date().toISOString()
-            };
-            updatedExports.push(newExport);
-            console.log('🆕 Added new export:', newExport);
+                name: product.name, // Thêm tên để hiển thị nhanh
+                unit: product.unit // Thêm đơn vị
+            });
         }
         
-        // Cập nhật currentReport
+        // Cập nhật currentReport trong bộ nhớ
         currentReport.exports = updatedExports;
-        console.log('📦 Current exports AFTER:', currentReport.exports);
 
         // Cập nhật database
-        console.log('💾 Saving to database...');
         await dbUpdate('reports', currentReport.reportId, {
             exports: updatedExports,
             updatedBy: getCurrentUser().employeeId,
             updatedAt: new Date().toISOString()
         });
         
-        console.log('✅ Database updated successfully');
-        
-        // Kiểm tra lại từ database
-        const reportFromDB = await dbGet('reports', currentReport.reportId);
-        console.log('🔄 Report from DB after update:', reportFromDB.exports);
-
-        // Tải lại tab
-        console.log('🔄 Reloading reports tab...');
+        // Tải lại tab để refresh UI và tổng kết
         loadReportsTab();
 
     } catch (error) {
-        console.error('❌ Error in increaseExport:', error);
+        console.error('Error increasing export:', error);
         showMessage('❌ Lỗi khi tăng số lượng xuất kho', 'error');
     }
 }

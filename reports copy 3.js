@@ -316,37 +316,51 @@ async function showExportsHistoryPopup() {
         showMessage('❌ Lỗi khi tải lịch sử xuất kho', 'error');
     }
 }
-// FIX: Copy trực tiếp từ tab Kho
+// FIX: Sửa hàm getExportsHistoryForDate - debug chi tiết
 async function getExportsHistoryForDate(date) {
     try {
-        // Lấy TẤT CẢ history
+        console.log('🔍 DEBUG getExportsHistoryForDate:', date);
+        
         const allHistory = await dbGetAll('inventoryHistory');
+        console.log('📜 Total history records:', allHistory.length);
         
-        // Lấy thông tin sản phẩm
+        // Debug: hiển thị tất cả records để kiểm tra
+        allHistory.forEach((record, index) => {
+            const recordDate = record.date.split('T')[0];
+            const isToday = recordDate === date;
+            const isExport = record.type === 'out';
+            console.log(`   Record ${index}: ${recordDate} | type: ${record.type} | isToday: ${isToday} | isExport: ${isExport}`);
+        });
+        
+        // Lọc xuất kho theo ngày
+        const exportsHistory = allHistory.filter(record => {
+            const recordDate = record.date.split('T')[0]; // Lấy phần YYYY-MM-DD
+            const isExport = record.type === 'out';
+            const isSameDate = recordDate === date;
+            
+            return isExport && isSameDate;
+        });
+        
+        console.log('✅ Filtered exports history for today:', exportsHistory.length);
+        
+        // Gắn thông tin sản phẩm
         const inventory = await dbGetAll('inventory');
+        console.log('📦 Inventory items:', inventory.length);
         
-        // Lọc và map giống tab Kho
-        const exportsHistory = allHistory
-            .filter(record => {
-                // Lọc theo type='out' và ngày
-                if (record.type !== 'out') return false;
-                
-                const recordDate = record.date ? record.date.split('T')[0] : '';
-                return recordDate === date;
-            })
-            .map(record => {
-                const product = inventory.find(p => p.productId === record.productId);
-                return {
-                    ...record,
-                    product: product
-                };
-            });
+        const exportsWithProducts = exportsHistory.map(record => {
+            const product = inventory.find(p => p.productId === record.productId);
+            console.log(`   Mapping: ${record.productId} -> ${product ? product.name : 'NOT FOUND'}`);
+            return {
+                ...record,
+                product: product
+            };
+        });
         
-        console.log('📋 Exports history for', date, ':', exportsHistory.length, 'records');
-        return exportsHistory;
+        console.log('🎯 Final exports with products:', exportsWithProducts);
+        return exportsWithProducts;
         
     } catch (error) {
-        console.error('Error getting exports history:', error);
+        console.error('❌ Error getting exports history:', error);
         return [];
     }
 }
@@ -1117,7 +1131,6 @@ async function updateNextDayOpeningBalance(currentDayClosingBalance, currentDate
         console.error('❌ Error updating next day opening balance:', error);
     }
 }
-
 // FIX: Sửa hoàn toàn hàm formatDate - tránh timezone issues
 function formatDate(date = new Date()) {
     // Nếu là string, xử lý trực tiếp không dùng Date object
@@ -1462,38 +1475,22 @@ async function renderExportsTable(currentExports) {
     }
 }
 
-// FIX: Sửa hàm increaseExport với debug chi tiết
+// BỔ SUNG: Hàm tăng số lượng xuất kho (increaseExport)
 async function increaseExport(productId) {
-    console.log('🎯 increaseExport CALLED with productId:', productId);
-    
-    if (!currentReport) {
-        console.error('❌ currentReport is null!');
-        return;
-    }
+    if (!currentReport) return;
 
     try {
         const product = await dbGet('inventory', productId);
         if (!product) {
-            console.error('❌ Product not found:', productId);
             showMessage('❌ Sản phẩm không tồn tại.', 'error');
             return;
         }
-
-        console.log('📦 Product found:', product.name);
-        console.log('📊 Current exports BEFORE:', currentReport.exports);
 
         // Kiểm tra tồn kho
         const currentExport = currentReport.exports.find(exp => exp.productId === productId);
         const exportedQuantity = currentExport ? currentExport.quantity : 0;
 
-        console.log('📈 Export info:', {
-            currentExport: currentExport,
-            exportedQuantity: exportedQuantity,
-            productStock: product.currentQuantity
-        });
-
         if (exportedQuantity >= product.currentQuantity) {
-            console.log('❌ Not enough stock');
             showMessage(`❌ Tồn kho chỉ còn ${product.currentQuantity} ${product.unit}. Không thể xuất thêm.`, 'error');
             return;
         }
@@ -1504,45 +1501,31 @@ async function increaseExport(productId) {
         if (itemIndex > -1) {
             // Tăng số lượng
             updatedExports[itemIndex].quantity += 1;
-            console.log('📈 Increased existing export:', updatedExports[itemIndex]);
         } else {
             // Thêm mới
-            const newExport = {
+            updatedExports.push({
                 productId: productId,
                 quantity: 1,
-                name: product.name,
-                unit: product.unit,
-                exportDate: currentReportDate,
-                createdAt: new Date().toISOString()
-            };
-            updatedExports.push(newExport);
-            console.log('🆕 Added new export:', newExport);
+                name: product.name, // Thêm tên để hiển thị nhanh
+                unit: product.unit // Thêm đơn vị
+            });
         }
         
-        // Cập nhật currentReport
+        // Cập nhật currentReport trong bộ nhớ
         currentReport.exports = updatedExports;
-        console.log('📦 Current exports AFTER:', currentReport.exports);
 
         // Cập nhật database
-        console.log('💾 Saving to database...');
         await dbUpdate('reports', currentReport.reportId, {
             exports: updatedExports,
             updatedBy: getCurrentUser().employeeId,
             updatedAt: new Date().toISOString()
         });
         
-        console.log('✅ Database updated successfully');
-        
-        // Kiểm tra lại từ database
-        const reportFromDB = await dbGet('reports', currentReport.reportId);
-        console.log('🔄 Report from DB after update:', reportFromDB.exports);
-
-        // Tải lại tab
-        console.log('🔄 Reloading reports tab...');
+        // Tải lại tab để refresh UI và tổng kết
         loadReportsTab();
 
     } catch (error) {
-        console.error('❌ Error in increaseExport:', error);
+        console.error('Error increasing export:', error);
         showMessage('❌ Lỗi khi tăng số lượng xuất kho', 'error');
     }
 }
