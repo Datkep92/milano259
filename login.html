@@ -37,13 +37,53 @@
         </div>
     </div>
 
+    <!-- ========================= -->
+    <!-- Firebase SDK load TRƯỚC   -->
+    <!-- ========================= -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<!-- THÊM DÒNG NÀY -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // Khởi tạo Firebase ngay khi load trang
+        const firebaseConfig = {
+    apiKey: "AIzaSyAcYhLhEiJk0WjQvQdwk0oNgyotp-ewKsk",
+    authDomain: "milano259.firebaseapp.com",
+    projectId: "milano259",
+    storageBucket: "milano259.firebasestorage.app",
+    messagingSenderId: "681812166818",
+    appId: "1:681812166818:web:24e638784a239b0021effb",
+    measurementId: "G-FSL6MSC7CT",
+    // THÊM databaseURL nếu dùng Realtime Database
+    databaseURL: "https://milano259-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+    console.log('✅ Firebase initialized');
+}
+    </script>
+
+    <!-- ========================= -->
+    <!-- Database & Auth scripts   -->
+    <!-- ========================= -->
     <script src="database.js"></script>
     <script src="auth.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
             try {
+                // 1. Khởi tạo IndexedDB
                 await initializeDatabase();
+                
+                // 2. Khởi tạo dữ liệu mẫu nếu cần
                 await initializeSampleData();
+                
+                // 3. Firebase sync đã tự động khởi động trong database.js
+                // (không cần gọi thủ công)
+                
+                // 4. Thiết lập sự kiện đăng nhập
                 setupLoginEventListeners();
             } catch (error) {
                 console.error('Initialization error:', error);
@@ -62,6 +102,7 @@
                 messageDiv.style.display = 'block';
             }
 
+            // Đăng nhập Admin (có password)
             loginForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 const phone = document.getElementById('phone').value.trim();
@@ -70,14 +111,13 @@
                 const result = await login(phone, password);
                 if (result.success) {
                     showLoginMessage(result.message || 'Đăng nhập thành công!', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 1000);
+                    setTimeout(() => window.location.href = 'index.html', 800);
                 } else {
                     showLoginMessage(result.message, 'error');
                 }
             });
 
+            // Đăng nhập Nhân viên (không cần password)
             employeeBtn.addEventListener('click', async function() {
                 const phone = document.getElementById('phone').value.trim();
                 if (!phone) {
@@ -88,14 +128,13 @@
                 const result = await login(phone, '');
                 if (result.success) {
                     showLoginMessage(result.message || 'Đăng nhập nhân viên thành công!', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 1000);
+                    setTimeout(() => window.location.href = 'index.html', 800);
                 } else {
                     showLoginMessage(result.message, 'error');
                 }
             });
         }
     </script>
+
 </body>
 </html>

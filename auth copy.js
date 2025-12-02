@@ -136,7 +136,7 @@ function getCurrentUser() {
     return appUser;
 }
 
-// THAY THẾ BẰNG: Hàm khởi tạo rỗng
+// Hàm khởi tạo rỗng
 async function initializeSampleData() {
     console.log('No sample data - starting with empty database');
     // Không tạo dữ liệu mẫu, để database trống

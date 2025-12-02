@@ -2868,6 +2868,35 @@ async function saveCurrentReport() {
         showMessage('❌ Lỗi khi lưu báo cáo: ' + error.message, 'error');
     }
 }
+// reports.js - cuối file
+window.loadReports = function() {
+    console.log('📊 Loading reports...');
+    // Gọi hàm chính của module
+    if (typeof initializeReports === 'function') initializeReports();
+    if (typeof loadReportsData === 'function') loadReportsData();
+};
 
-// Gọi hàm migrate một lần khi khởi động (có thể remove sau)
-// setTimeout(() => migrateExportsHistoryDate(), 3000);
+// inventory.js - cuối file  
+window.loadInventory = function() {
+    console.log('📦 Loading inventory...');
+    if (typeof initializeInventory === 'function') initializeInventory();
+    if (typeof loadInventoryData === 'function') loadInventoryData();
+};
+
+// statistics.js - cuối file
+window.loadStatistics = function() {
+    console.log('📈 Loading statistics...');
+    if (typeof initializeStatistics === 'function') initializeStatistics();
+};
+
+// employees.js - cuối file
+window.loadEmployeesData = function() {
+    console.log('👥 Loading employees...');
+    if (typeof initializeEmployees === 'function') initializeEmployees();
+};
+
+// overview.js - cuối file
+window.loadOverview = function() {
+    console.log('👁 Loading overview...');
+    if (typeof initializeOverview === 'function') initializeOverview();
+};
