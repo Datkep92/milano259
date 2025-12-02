@@ -5,34 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quản Lý Cafe</title>
     <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="employees.css">
+    <link rel="stylesheet" href="employees.css">
 </head>
 <body>
     <div id="app">
         <!-- Header với tabs -->
-        <!-- Header với tabs gọn gàng -->
-<header class="header">
-    <div class="user-info">
-        <button class="tab-btn active" data-tab="reports" title="Báo cáo">📈</button>
-        <button class="tab-btn" data-tab="employees" title="Nhân viên">👥</button>
-        <button class="tab-btn" data-tab="inventory" title="Kho">📦</button>
-        <button class="tab-btn" data-tab="overview" title="Tổng quan">📊</button>
-    </div>
-</header>
+        <header class="header">
+            <div class="user-info">
+                <button class="tab-btn active" data-tab="reports" title="Báo cáo">📈</button>
+                <button class="tab-btn" data-tab="inventory" title="Kho">📦</button>
+                <button class="tab-btn" data-tab="statistics" title="Thống kê">📊</button> <!-- Thêm tab này -->
+                ${isAdmin() ? `
+                    <button class="tab-btn" data-tab="employees" title="Nhân viên">👥</button>
+                    <button class="tab-btn" data-tab="overview" title="Tổng quan">👁</button>
+                ` : ''}
+            </div>
+        </header>
 
         <!-- Nội dung chính -->
         <main class="main-content">
             <!-- Tab Báo cáo -->
             <div id="reports" class="tab-content active"></div>
 
-            <!-- Tab Nhân viên -->
-            <div id="employees" class="tab-content"></div>
-
             <!-- Tab Kho -->
             <div id="inventory" class="tab-content"></div>
 
-            <!-- Tab Tổng quan -->
-            <div id="overview" class="tab-content"></div>
+            <!-- Tab Thống kê -->
+            <div id="statistics" class="tab-content"></div> <!-- Thêm div này -->
+
+            ${isAdmin() ? `
+                <!-- Tab Nhân viên -->
+                <div id="employees" class="tab-content"></div>
+
+                <!-- Tab Tổng quan -->
+                <div id="overview" class="tab-content"></div>
+            ` : ''}
         </main>
 
         <!-- Popup container -->
@@ -45,11 +52,15 @@
     </div>
 
     <script src="database.js"></script>
+    <script src="firebase-migration.js"></script>
     <script src="auth.js"></script>
     <script src="reports.js"></script>
-    <script src="employees.js"></script>
+    ${isAdmin() ? '<script src="employees.js"></script>' : ''}
+    <script src="inventory-period.js"></script>
     <script src="inventory.js"></script>
-    <script src="overview.js"></script>
+    <script src="statistics.js"></script> <!-- Thêm file này -->
+    ${isAdmin() ? '<script src="overview.js"></script>' : ''}
     <script src="app.js"></script>
+
 </body>
 </html>

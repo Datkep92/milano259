@@ -1,40 +1,7 @@
 // Main application initialization
 let currentTab = 'reports';
 
-// Initialize application
-async function initializeApp() {
-    try {
-        showLoading(true);
-        
-        // Check authentication
-        if (!checkAuth()) {
-            window.location.href = 'login.html';
-            return;
-        }
-        
-        // Initialize database
-        await initializeDatabase();
-        
-        // Initialize sample data for demo
-        await initializeSampleData();
-        
-        // Setup main event listeners
-        setupAppEventListeners();
-        
-        // Load current user info
-        loadUserInfo();
-        
-        // Initialize current tab
-        initializeCurrentTab();
-        
-        showLoading(false);
-        
-    } catch (error) {
-        console.error('App initialization error:', error);
-        showMessage('Lỗi khởi tạo ứng dụng', 'error');
-        showLoading(false);
-    }
-}
+
 
 // Setup main event listeners
 function setupAppEventListeners() {
@@ -79,9 +46,9 @@ function loadUserInfo() {
 }
 
 
-// FIX: Sửa hàm switchTab - reset state khi chuyển tab khác
+// FIX: Sửa hàm switchTab - thêm tab statistics
 function switchTab(tabName) {
-    console.log('Switching to tab:', tabName);
+    console.log('🔄 Switching to tab:', tabName);
     
     // Reset reports state nếu chuyển sang tab khác
     if (tabName !== 'reports') {
@@ -92,37 +59,63 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    const tabButton = document.querySelector(`[data-tab="${tabName}"]`);
+    if (tabButton) {
+        tabButton.classList.add('active');
+    }
     
     // Update active tab content
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
+        content.style.display = 'none';
     });
-    document.getElementById(tabName).classList.add('active');
+    
+    const tabContent = document.getElementById(tabName);
+    if (tabContent) {
+        tabContent.classList.add('active');
+        tabContent.style.display = 'block';
+    }
     
     currentTab = tabName;
     initializeCurrentTab();
 }
+// Hàm kiểm tra quyền admin
+function isAdmin() {
+    const user = getCurrentUser();
+    return user && user.role === 'admin';
+}
 
-// FIX: Sửa hàm initializeCurrentTab - thêm timeout để đảm bảo DOM ready
+// Đưa hàm ra global scope
+window.isAdmin = isAdmin;
+// FIX: Sửa hàm initializeCurrentTab - thêm tab statistics
 function initializeCurrentTab() {
     setTimeout(() => {
+        console.log('🚀 Initializing tab:', currentTab);
+        
         switch (currentTab) {
             case 'reports':
                 initializeReportsTab();
                 break;
-            case 'employees':
-                initializeEmployeesTab();
-                break;
             case 'inventory':
                 initializeInventoryTab();
                 break;
-            case 'overview':
-                initializeOverviewTab();
+            case 'statistics': // Thêm case này
+                initializeStatisticsTab();
                 break;
+            case 'employees':
+                if (isAdmin()) initializeEmployeesTab();
+                break;
+            case 'overview':
+                if (isAdmin()) initializeOverviewTab();
+                break;
+            default:
+                console.warn('Unknown tab:', currentTab);
         }
     }, 50);
 }
+
+
 
 // Show loading overlay
 function showLoading(show) {
@@ -171,10 +164,98 @@ function showMessage(message, type = 'info') {
     }, 5000);
 }
 
-// Initialize app when DOM is loaded
+// Trong app.js, thay vì dùng template literal trong HTML,
+// chúng ta sẽ render bằng JavaScript sau khi DOM ready
 document.addEventListener('DOMContentLoaded', function() {
+    // Render header với điều kiện admin
+    renderHeader();
+    
+    // Khởi tạo app
     initializeApp();
 });
+
+// Hàm render header động
+function renderHeader() {
+    const header = document.querySelector('.header .user-info');
+    if (!header) return;
+    
+    const user = getCurrentUser();
+    const isAdminUser = user && user.role === 'admin';
+    
+    header.innerHTML = `
+        <button class="tab-btn active" data-tab="reports" title="Báo cáo">📈</button>
+        <button class="tab-btn" data-tab="inventory" title="Kho">📦</button>
+        <button class="tab-btn" data-tab="statistics" title="Thống kê">📊</button>
+        ${isAdminUser ? `
+            <button class="tab-btn" data-tab="employees" title="Nhân viên">👥</button>
+            <button class="tab-btn" data-tab="overview" title="Tổng quan">👁</button>
+        ` : ''}
+    `;
+}
+
+// Hàm render main content động
+function renderMainContent() {
+    const main = document.querySelector('.main-content');
+    if (!main) return;
+    
+    const user = getCurrentUser();
+    const isAdminUser = user && user.role === 'admin';
+    
+    main.innerHTML = `
+        <!-- Tab Báo cáo -->
+        <div id="reports" class="tab-content active"></div>
+
+        <!-- Tab Kho -->
+        <div id="inventory" class="tab-content"></div>
+
+        <!-- Tab Thống kê -->
+        <div id="statistics" class="tab-content"></div>
+        
+        ${isAdminUser ? `
+            <!-- Tab Nhân viên -->
+            <div id="employees" class="tab-content"></div>
+
+            <!-- Tab Tổng quan -->
+            <div id="overview" class="tab-content"></div>
+        ` : ''}
+    `;
+}
+
+// Cập nhật initializeApp
+async function initializeApp() {
+    try {
+        showLoading(true);
+        
+        // Check authentication
+        if (!checkAuth()) {
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        // Initialize database
+        await initializeDatabase();
+        
+        // Render UI động
+        renderHeader();
+        renderMainContent();
+        
+        // Setup event listeners
+        setupAppEventListeners();
+        
+        // Load user info
+        loadUserInfo();
+        
+        // Initialize current tab
+        initializeCurrentTab();
+        
+        showLoading(false);
+        
+    } catch (error) {
+        console.error('App initialization error:', error);
+        showMessage('Lỗi khởi tạo ứng dụng', 'error');
+        showLoading(false);
+    }
+}
 
 // Add CSS for new elements
 const additionalCSS = `

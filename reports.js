@@ -5,7 +5,6 @@ let isReportsInitialized = false;
 // FIX: Khai báo biến hiển thị danh sách kho
 let showInventoryList = false;
 let showReportsHistory = false;
-let showOperationsHistory = false;
 
 // FIX: Sửa hàm toggle
 function toggleReportsHistoryTab() {
@@ -14,11 +13,6 @@ function toggleReportsHistoryTab() {
     loadReportsTab();
 }
 
-function toggleOperationsHistory() {
-    showOperationsHistory = !showOperationsHistory;
-    console.log('🛒 Toggle operations history:', showOperationsHistory);
-    loadReportsTab();
-}
 
 
 // FIX: Sửa hàm toggleInventoryList - đảm bảo reload đúng
@@ -231,7 +225,7 @@ async function renderReportsTab(container, report) {
     const isSaved = report.revenue > 0 || report.closingBalance > 0 || totalExports > 0 || hasExportsHistory;
     
     container.innerHTML = `
-        <div class="section">
+    <div class="reports-content" data-tab="reports">
             <div class="date-selector">
                 <input type="date" class="date-input" value="${report.date}" id="dateInput" 
                        onchange="changeDateByInput(this.value)">
@@ -338,18 +332,7 @@ async function renderReportsTab(container, report) {
             </div>
         ` : ''}
 
-        <!-- PHẦN MUA SẮM VẬN HÀNH -->
-        <div class="section">
-            <h2>🔧 Mua sắm vận hành</h2>
-            <div class="operations-summary">
-                <div class="operation-item clickable" data-action="show-operations" data-type="material">
-                    <span>•</span><span>Nguyên liệu ${formatCurrency(await calculateOperationsTotal('material', report.date))} ›</span>
-                </div>
-                <div class="operation-item clickable" data-action="show-operations" data-type="service">
-                    <span>•</span><span>Dịch vụ ${formatCurrency(await calculateOperationsTotal('service', report.date))} ›</span>
-                </div>
-            </div>
-        </div>
+       
         <!-- PHẦN LỊCH SỬ BÁO CÁO -->
         <div class="section">
             <div class="section-header-with-action">
@@ -360,18 +343,6 @@ async function renderReportsTab(container, report) {
             </div>
             ${showReportsHistory ? await renderReportsHistory() : ''}
         </div>
-
-        <!-- PHẦN LỊCH SỬ MUA SẮM -->
-        <div class="section">
-            <div class="section-header-with-action">
-                <h2 class="clickable-section-header" data-action="toggle-operations-history">🛒 Lịch sử Mua sắm</h2>
-                <button class="btn btn-outline btn-sm" data-action="toggle-operations-history">
-                    ${showOperationsHistory ? '👁‍🗨' : '👁'}
-                </button>
-            </div>
-            ${showOperationsHistory ? await renderOperationsHistory() : ''}
-        </div>
-
         ${isAdmin() ? `
         <div class="section">
             <h2>🧪 Developer Tools</h2>
@@ -597,19 +568,22 @@ function initializeReportsTab() {
     }
 }
 
-// HÀM CHÍNH: SETUP LISTENERS CHO TAB REPORTS (Thêm cleanup cho listener chính)
+// Thay vì document.addEventListener, dùng container cụ thể
 function setupReportsEventListeners() {
     console.log('Setting up reports event listeners...');
     
-    // Remove all existing listeners
-    document.removeEventListener('click', handleReportsClick);
-    document.removeEventListener('input', handleReportsInput);
+    const reportsContainer = document.getElementById('reports');
+    if (!reportsContainer) return;
     
-    // Add new listeners - sử dụng event delegation
-    document.addEventListener('click', handleReportsClick);
-    document.addEventListener('input', handleReportsInput);
+    // Remove old listeners
+    reportsContainer.removeEventListener('click', handleReportsClick);
+    reportsContainer.removeEventListener('input', handleReportsInput);
     
-    console.log('Event listeners setup completed');
+    // Add new listeners chỉ trên reports container
+    reportsContainer.addEventListener('click', handleReportsClick);
+    reportsContainer.addEventListener('input', handleReportsInput);
+    
+    console.log('✅ Reports event listeners setup on container');
 }
 
 // HÀM SETUP CHO POPUP CHI PHÍ (Thêm cleanup)
@@ -629,69 +603,16 @@ function setupTransfersEventListeners() {
 }
 
 
-
-// HÀM SỬA LỖI CHÍNH: SETUP LISTENERS CHO POPUP MUA SẮM VẬN HÀNH (Đảm bảo cleanup)
-function setupOperationsEventListeners(initialTab) {
-    // Rất quan trọng: GỠ BỎ listener cũ bằng tên hàm để tránh lỗi nhảy nhiều lần
-    document.removeEventListener('click', handleOperationsClick); 
-    
-    // Gắn listener mới
-    document.addEventListener('click', handleOperationsClick);
-
-    // Thiết lập tab active ban đầu
-    const tabName = initialTab === 'material' ? 'materialTab' : 'serviceTab';
-    const initialTabBtn = document.querySelector(`[data-tab="${tabName}"]`);
-    
-    document.querySelectorAll('.popup-tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelectorAll('.popup-tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-
-    if (initialTabBtn) {
-        initialTabBtn.classList.add('active');
-    }
-    const initialTabContent = document.getElementById(tabName);
-    if (initialTabContent) {
-        initialTabContent.classList.add('active');
-    }
-}
-
-// HÀM XỬ LÝ CLICK TRONG POPUP MUA SẮM VẬN HÀNH (Liên quan đến sự kiện)
-function handleOperationsClick(e) {
-    if (e.target.matches('.popup-tab-btn')) {
-        const tabName = e.target.dataset.tab;
-        
-        // Update active tab button
-        document.querySelectorAll('.popup-tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        e.target.classList.add('active');
-        
-        // Update active tab content
-        document.querySelectorAll('.popup-tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        document.getElementById(tabName).classList.add('active');
-        
-    } else if (e.target.matches('[data-action="save-material"]')) {
-        // Giả định hàm saveMaterial đã được định nghĩa ở nơi khác
-        saveMaterial();
-        
-    } else if (e.target.matches('[data-action="save-service"]')) {
-        // Giả định hàm saveService đã được định nghĩa ở nơi khác
-        saveService();
-    }
-}
-function generateOperationId() {
-    return 'op_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-}
-// FIX: Cập nhật hàm handleReportsClick - thêm handler cho lịch sử xuất kho
 function handleReportsClick(e) {
+    // KIỂM TRA nếu click từ inventory container thì bỏ qua
+    if (e.target.closest('#inventory')) {
+        console.log('🚫 Click from inventory, ignoring in reports');
+        return;
+    }
+    
     const action = e.target.dataset.action;
     const target = e.target;
-
+    
     console.log('🔍 Click detected - Action:', action, 'Target:', target);
 
     if (action === "toggle-reports-history") {
@@ -699,10 +620,7 @@ function handleReportsClick(e) {
         return;
     }
     
-    if (action === "toggle-operations-history") {
-        toggleOperationsHistory();
-        return;
-    }
+    
     
     if (action === "toggle-inventory-list") {
         toggleInventoryList();
@@ -710,7 +628,6 @@ function handleReportsClick(e) {
     }
     if (action === "clear-all-data") clearAllData();
     else if (action === "clear-device-id") clearDeviceId();
-    else if (action === "toggle-operations-history") toggleOperationsHistory();
     else if (action === "debug-exports") debugExportsDetailed();
     else if (action === "add-sample-exports") addSampleExports();
 
@@ -755,12 +672,7 @@ function handleReportsClick(e) {
         const productId = target.dataset.productId || target.closest('[data-action="decrease-export"]')?.dataset.productId;
         if (productId) decreaseExport(productId);
     }
-    else if (action === "show-operations") {
-        console.log('🔧 Opening operations popup...');
-        const type = target.dataset.type || target.closest('[data-action="show-operations"]')?.dataset.type;
-        console.log('Operations type:', type);
-        showOperationsPopup();
-    }
+   
     else if (action === "show-reports-history") {
         showReportsHistoryPopup();
     }
@@ -1738,74 +1650,7 @@ async function deleteTransfer(transferId) {
     }
 }
 
-async function saveMaterialOperation() {
-    const name = document.getElementById('materialName').value.trim();
-    const unit = document.getElementById('materialUnit').value.trim();
-    const quantity = parseFloat(document.getElementById('materialQuantity').value);
-    const amount = parseFloat(document.getElementById('materialAmount').value);
-    
-    if (!name || !unit || !quantity || !amount) {
-        showMessage('Vui lòng nhập đầy đủ thông tin', 'error');
-        return;
-    }
-    
-    try {
-        const operation = {
-            type: 'material',
-            name: name,
-            unit: unit,
-            quantity: quantity,
-            amount: amount,
-            date: currentReportDate,
-            createdBy: getCurrentUser().employeeId,
-            createdAt: new Date().toISOString()
-        };
-        
-        await dbAdd('operations', operation);
-        
-        // Update inventory
-        await updateInventoryForMaterial(name, unit, quantity, amount);
-        
-        showMessage('Đã lưu mua nguyên liệu thành công', 'success');
-        closePopup();
-        loadReportsTab();
-        
-    } catch (error) {
-        console.error('Error saving material:', error);
-        showMessage('Lỗi khi lưu mua nguyên liệu', 'error');
-    }
-}
 
-async function saveServiceOperation() {
-    const name = document.getElementById('serviceName').value.trim();
-    const amount = parseFloat(document.getElementById('serviceAmount').value);
-    
-    if (!name || !amount) {
-        showMessage('Vui lòng nhập đầy đủ thông tin', 'error');
-        return;
-    }
-    
-    try {
-        const operation = {
-            type: 'service',
-            name: name,
-            amount: amount,
-            date: currentReportDate,
-            createdBy: getCurrentUser().employeeId,
-            createdAt: new Date().toISOString()
-        };
-        
-        await dbAdd('operations', operation);
-        
-        showMessage('Đã lưu mua dịch vụ thành công', 'success');
-        closePopup();
-        loadReportsTab();
-        
-    } catch (error) {
-        console.error('Error saving service:', error);
-        showMessage('Lỗi khi lưu mua dịch vụ', 'error');
-    }
-}
 
 // FIX: Sửa hàm updateInventoryForMaterial trong reports.js
 async function updateInventoryForMaterial(name, unit, quantity, amount) {
@@ -2224,184 +2069,6 @@ async function copyReportToClipboard() {
     }
 }
 
-
-
-// FIX: Sửa hàm calculateOperationsTotal - tính theo ngày báo cáo
-async function calculateOperationsTotal(type, date = currentReportDate) {
-    try {
-        const operations = await dbGetAll('operations');
-        const total = operations
-            .filter(op => op.type === type && op.dateKey === date)
-            .reduce((sum, op) => sum + (op.amount || 0), 0);
-        return total;
-    } catch (error) {
-        console.error('Error calculating operations total:', error);
-        return 0;
-    }
-}
-
-// FIX: Hiển thị toàn bộ lịch sử mua sắm
-async function renderOperationsHistory() {
-    try {
-        console.log('🛒 Loading ALL operations history');
-        const operations = await dbGetAll('operations');
-        
-        console.log('🛒 ALL operations:', operations);
-        
-        if (operations.length === 0) {
-            return `
-                <div class="empty-state">
-                    <p>📭 Chưa có giao dịch mua sắm nào</p>
-                    <small>Thêm giao dịch mới để xem ở đây</small>
-                </div>
-            `;
-        }
-        
-        // Sắp xếp theo ngày mới nhất
-        const sortedOps = operations.sort((a, b) => {
-            const dateA = new Date(a.date || a.createdAt || a.dateKey);
-            const dateB = new Date(b.date || b.createdAt || b.dateKey);
-            return dateB - dateA; // Mới nhất lên đầu
-        });
-        
-        console.log('🛒 Sorted operations:', sortedOps);
-        
-        let historyHTML = '';
-        let currentDateGroup = null;
-        
-        for (const op of sortedOps) {
-            const opDate = convertToDisplayFormat(op.date || op.dateKey || op.createdAt);
-            
-            // Tạo nhóm theo ngày
-            if (opDate !== currentDateGroup) {
-                if (currentDateGroup !== null) {
-                    historyHTML += `</div>`; // Đóng nhóm ngày trước
-                }
-                
-                currentDateGroup = opDate;
-                const dailyOps = sortedOps.filter(item => 
-                    convertToDisplayFormat(item.date || item.dateKey || item.createdAt) === opDate
-                );
-                const dailyTotal = dailyOps.reduce((sum, item) => sum + (item.amount || item.total || 0), 0);
-                
-                historyHTML += `
-                    <div class="date-group">
-                        <div class="date-group-header">
-                            <h4>${opDate}</h4>
-                            <span class="daily-total">${formatCurrency(dailyTotal)}</span>
-                        </div>
-                        <div class="date-group-operations">
-                `;
-            }
-            
-            historyHTML += createOperationHTML(op);
-        }
-        
-        // Đóng nhóm cuối cùng
-        if (currentDateGroup !== null) {
-            historyHTML += `</div></div>`;
-        }
-        
-        const totalAmount = sortedOps.reduce((sum, op) => sum + (op.amount || op.total || 0), 0);
-        const totalCount = sortedOps.length;
-        
-        return `
-            <div class="operations-history-full">
-                <div class="operations-summary">
-                    <div class="summary-item">
-                        <span>Tổng giao dịch</span>
-                        <strong>${totalCount}</strong>
-                    </div>
-                    <div class="summary-item">
-                        <span>Tổng chi phí</span>
-                        <strong>${formatCurrency(totalAmount)}</strong>
-                    </div>
-                </div>
-                
-                <div class="operations-timeline">
-                    ${historyHTML}
-                </div>
-            </div>
-        `;
-        
-    } catch (error) {
-        console.error('❌ Error loading operations history:', error);
-        return `
-            <div class="empty-state error-state">
-                <p>❌ Lỗi tải lịch sử mua sắm</p>
-                <small>${error.message}</small>
-            </div>
-        `;
-    }
-}
-
-function createOperationHTML(op) {
-    return `
-        <div class="operation-item" data-operation-id="${op.id}">
-            <!-- Dòng 1: Loại và Tên -->
-            <div class="operation-row-1">
-                <div class="operation-type">
-                    ${op.type === 'material' ? '🛒' : '🔧'}
-                </div>
-                <div class="operation-name">
-                    ${op.name || op.productName || 'Không có tên'}
-                </div>
-            </div>
-            
-          
-                <div class="operation-quantity">
-                    ${op.quantity || 1} ${op.unit || ''}
-                    ${op.unitPrice ? ` • ${formatCurrency(op.unitPrice)}` : ''}
-                </div>
-                <div class="operation-amount">
-                    ${formatCurrency(op.amount || op.total || 0)}
-                </div>
-            </div>
-            
-            ${op.description ? `
-            <div class="operation-description">
-                ${op.description}
-            </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-// Helper function chuyển đổi định dạng ngày
-function convertToDisplayFormat(dateString) {
-    if (!dateString) return 'Không có ngày';
-    
-    try {
-        // Nếu đã là định dạng dd/mm/yyyy thì giữ nguyên
-        if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-            return dateString;
-        }
-        
-        // Nếu là định dạng ISO (yyyy-mm-dd)
-        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            const parts = dateString.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-        
-        // Nếu là ISO string với time
-        const date = new Date(dateString);
-        if (!isNaN(date.getTime())) {
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-        
-        return dateString;
-    } catch (error) {
-        console.warn('❌ Date conversion error:', error);
-        return dateString;
-    }
-}
-
-
-
-
 // FIX: Cập nhật hàm tạo nội dung báo cáo để hiển thị nhập kho
 async function createDailyReportContent(reportData) {
     console.log('🐛 createDailyReportContent - reportData:', reportData);
@@ -2750,62 +2417,7 @@ async function getImportsHistoryForDate(date) {
     }
 }
 
-// FIX: Cập nhật hàm showOperationsPopup để hiển thị ngày hiện tại
-function showOperationsPopup(type = 'material') {
-    const popupHTML = `
-        <div class="popup" style="max-width: 500px;">
-            <button class="close-popup" data-action="close-popup">×</button>
-            <h3>🔧 Mua sắm Vận hành - ${formatDateDisplay(currentReportDate)}</h3>
-            
-            <div class="popup-info">
-                <small>💡 Đang thao tác cho ngày: <strong>${formatDateDisplay(currentReportDate)}</strong></small>
-            </div>
-            
-            <div class="popup-tabs">
-                <button class="popup-tab-btn" data-tab="materialTab" id="materialTabBtn">🛒 Nguyên liệu / Hàng hóa</button>
-                <button class="popup-tab-btn" data-tab="serviceTab">📝 Dịch vụ / Chi phí khác</button>
-            </div>
 
-            <div id="materialTab" class="popup-tab-content">
-                <div class="form-group">
-                    <label>Tên / Mô tả:</label>
-                    <input type="text" id="materialName" placeholder="Tên nguyên liệu/hàng hóa">
-                </div>
-                <div class="form-group">
-                    <label>Số lượng:</label>
-                    <input type="number" id="materialQuantity" placeholder="Số lượng" min="0">
-                </div>
-                <div class="form-group">
-                    <label>Đơn vị (vd: kg, gói):</label>
-                    <input type="text" id="materialUnit" placeholder="Đơn vị">
-                </div>
-                <div class="form-group">
-                    <label>Thành tiền (tổng):</label>
-                    <input type="number" id="materialAmount" placeholder="Thành tiền" min="0">
-                </div>
-                <button class="btn btn-primary" data-action="save-material" style="width: 100%;">💾 Lưu - Cập nhật kho</button>
-            </div>
-
-            <div id="serviceTab" class="popup-tab-content">
-                <div class="form-group">
-                    <label>Tên dịch vụ / Chi phí:</label>
-                    <input type="text" id="serviceName" placeholder="Tên dịch vụ/chi phí">
-                </div>
-                <div class="form-group">
-                    <label>Số tiền:</label>
-                    <input type="number" id="serviceAmount" placeholder="Số tiền" min="0">
-                </div>
-                <button class="btn btn-primary" data-action="save-service" style="width: 100%;">💾 Lưu</button>
-            </div>
-            
-            <div class="popup-actions">
-                <button class="btn btn-secondary" data-action="close-popup">Đóng</button>
-            </div>
-        </div>
-    `;
-    showPopup(popupHTML);
-    setupOperationsEventListeners(type);
-}
 
 // FIX: Thêm hàm để migrate dữ liệu cũ (chạy một lần)
 async function migrateOperationsDate() {
