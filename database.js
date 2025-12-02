@@ -1,6 +1,6 @@
 const DB_NAME = 'CafeManagementDB';
 const DB_VERSION = 6;
-
+alert("ok")
 // Database instance - THÊM FLAG ĐÃ KHỞI TẠO
 let db = null;
 let dbInitialized = false; // THÊM: Flag để tránh khởi tạo nhiều lần
