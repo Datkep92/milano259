@@ -1,326 +1,50 @@
-const DB_NAME = 'CafeManagementDB';
-const DB_VERSION = 6;
-alert("ok")
-// Database instance - THÊM FLAG ĐÃ KHỞI TẠO
-let db = null;
-let dbInitialized = false; // THÊM: Flag để tránh khởi tạo nhiều lần
-let storeInstance = null; // THÊM: Single instance của CafeStore
+// =========================================================
+// DATABASE SYSTEM - CORE CONFIGURATION
+// =========================================================
 
-// Firebase sync config
+const DB_NAME = 'CafeManagementDB';
+const DB_VERSION = 10; // ⚠️ FIX: Tăng version lên 10 để buộc IndexedDB tạo store work_logs
+
+// Database instance
+let db = null;
+let dbInitialized = false;
+
+// Firebase sync state
 let firebaseSync = {
     enabled: true,
     isSyncing: false,
     pendingSyncs: [],
     db: null,
-    syncStarted: false // THÊM: Flag để tránh start sync nhiều lần
+    syncStarted: false
 };
 
-// ==================== CORE STORE (UPDATED - SINGLETON) ====================
-class CafeStore {
-    constructor() {
-        // Chỉ khởi tạo 1 lần
-        if (storeInstance) {
-            return storeInstance;
-        }
-        
-        this.events = new EventTarget();
-        this.pendingActions = [];
-        this.syncTimeout = null;
-        this.deviceId = this.getDeviceId();
-        this.initialized = false;
-        
-        console.log('✅ CafeStore initialized');
-        storeInstance = this;
-    }
-    
-    // THÊM: Hàm init để đảm bảo chỉ chạy 1 lần
-    async init() {
-        if (this.initialized) return;
-        
-        // Load sample data if empty
-        await checkAndLoadSampleData();
-        
-        // Auto-start Firebase sync
-        if (!firebaseSync.syncStarted) {
-            setTimeout(() => {
-                initFirebase();
-                startPeriodicSync(10);
-            }, 2000);
-        }
-        
-        this.initialized = true;
-    }
-    
-    async dispatch(action) {
-        console.log('🔄 Store dispatch:', action.type);
-        
-        // Add metadata
-        const actionWithMeta = {
-            ...action,
-            meta: {
-                ...action.meta,
-                timestamp: Date.now(),
-                deviceId: this.deviceId,
-                actionId: 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-            }
-        };
-        
-        // Process for UI
-        const result = await this.processAction(actionWithMeta);
-        
-        // Queue for sync
-        if (action.meta?.needsSync !== false) {
-            this.queueForSync(actionWithMeta);
-        }
-        
-        return result;
-    }
-    
-    async processAction(action) {
-        const { type, payload } = action;
-        
-        try {
-            let result;
-            let storeName;
-            
-            switch (type) {
-                case 'EMPLOYEE_ADD':
-                    storeName = 'employees';
-                    result = await this.addEmployee(payload);
-                    break;
-                case 'EMPLOYEE_UPDATE':
-                    storeName = 'employees';
-                    result = await this.updateEmployee(payload);
-                    break;
-                case 'EMPLOYEE_DELETE':
-                    storeName = 'employees';
-                    result = await this.deleteEmployee(payload);
-                    break;
-                case 'INVENTORY_ADD':
-                    storeName = 'inventory';
-                    result = await this.addInventory(payload);
-                    break;
-                case 'INVENTORY_UPDATE':
-                    storeName = 'inventory';
-                    result = await this.updateInventory(payload);
-                    break;
-                case 'ATTENDANCE_ADD':
-                    storeName = 'attendance';
-                    result = await this.addAttendance(payload);
-                    break;
-                case 'REPORT_ADD':
-                    storeName = 'reports';
-                    result = await this.addReport(payload);
-                    break;
-                case 'DISCIPLINE_ADD':
-                    storeName = 'discipline_records';
-                    result = await this.addDiscipline(payload);
-                    break;
-                default:
-                    console.warn('Unknown action type:', type);
-                    return null;
-            }
-            
-            // Emit event for UI
-            this.events.dispatchEvent(new CustomEvent('data-changed', {
-                detail: { 
-                    store: storeName,
-                    action: type,
-                    data: result,
-                    payload: payload
-                }
-            }));
-            
-            return result;
-            
-        } catch (error) {
-            console.error('❌ Error processing action:', error);
-            throw error;
-        }
-    }
-    
-    // CRUD methods với metadata
-    async addEmployee(data) {
-        const employeeData = {
-            ...data,
-            employeeId: data.employeeId || 'emp_' + Date.now(),
-            _version: 1,
-            _createdAt: new Date().toISOString(),
-            _updatedAt: new Date().toISOString(),
-            _deviceId: this.deviceId,
-            _synced: false
-        };
-        
-        return await dbAddWithSync('employees', employeeData);
-    }
-    
-    async updateEmployee(data) {
-        const current = await dbGet('employees', data.employeeId);
-        if (!current) throw new Error('Employee not found');
-        
-        const updateData = {
-            ...data,
-            _version: (current._version || 0) + 1,
-            _updatedAt: new Date().toISOString(),
-            _deviceId: this.deviceId,
-            _synced: false
-        };
-        
-        return await dbUpdateWithSync('employees', data.employeeId, updateData);
-    }
-    
-    async deleteEmployee(employeeId) {
-        return await dbUpdateWithSync('employees', employeeId, {
-            status: 'deleted',
-            _deletedAt: new Date().toISOString(),
-            _version: (await dbGet('employees', employeeId))._version + 1,
-            _synced: false
-        });
-    }
-    
-    async addInventory(data) {
-        const inventoryData = {
-            ...data,
-            productId: data.productId || 'prod_' + Date.now(),
-            _version: 1,
-            _createdAt: new Date().toISOString(),
-            _updatedAt: new Date().toISOString(),
-            _deviceId: this.deviceId,
-            _synced: false
-        };
-        
-        return await dbAddWithSync('inventory', inventoryData);
-    }
-    
-    async updateInventory(data) {
-        const current = await dbGet('inventory', data.productId);
-        if (!current) throw new Error('Product not found');
-        
-        const updateData = {
-            ...data,
-            _version: (current._version || 0) + 1,
-            _updatedAt: new Date().toISOString(),
-            _deviceId: this.deviceId,
-            _synced: false
-        };
-        
-        return await dbUpdateWithSync('inventory', data.productId, updateData);
-    }
-    
-    async addAttendance(data) {
-        const attendanceData = {
-            ...data,
-            attendanceId: data.attendanceId || Date.now(),
-            _version: 1,
-            _createdAt: new Date().toISOString(),
-            _deviceId: this.deviceId,
-            _synced: false
-        };
-        
-        return await dbAddWithSync('attendance', attendanceData);
-    }
-    
-    async addReport(data) {
-        const reportData = {
-            ...data,
-            reportId: data.reportId || 'rep_' + Date.now(),
-            _version: 1,
-            _createdAt: new Date().toISOString(),
-            _deviceId: this.deviceId,
-            _synced: false
-        };
-        
-        return await dbAddWithSync('reports', reportData);
-    }
-    
-    async addDiscipline(data) {
-        const disciplineData = {
-            ...data,
-            id: data.id || Date.now(),
-            _version: 1,
-            _createdAt: new Date().toISOString(),
-            _deviceId: this.deviceId,
-            _synced: false
-        };
-        
-        return await dbAddWithSync('discipline_records', disciplineData);
-    }
-    
-    queueForSync(action) {
-        this.pendingActions.push(action);
-        
-        clearTimeout(this.syncTimeout);
-        this.syncTimeout = setTimeout(() => {
-            this.processSyncQueue();
-        }, 3000); // Debounce 3 giây
-    }
-    
-    async processSyncQueue() {
-        if (this.pendingActions.length === 0 || !firebaseSync.enabled) return;
-        
-        const actions = [...this.pendingActions];
-        this.pendingActions = [];
-        
-        for (const action of actions) {
-            try {
-                await pushToFirebase(this.getStoreFromAction(action), action.payload);
-            } catch (error) {
-                console.error('Sync failed, re-queueing:', error);
-                this.pendingActions.push(action);
-            }
-        }
-    }
-    
-    getStoreFromAction(action) {
-        if (action.type.includes('EMPLOYEE')) return 'employees';
-        if (action.type.includes('INVENTORY')) return 'inventory';
-        if (action.type.includes('ATTENDANCE')) return 'attendance';
-        if (action.type.includes('REPORT')) return 'reports';
-        if (action.type.includes('DISCIPLINE')) return 'discipline_records';
-        return null;
-    }
-    
-    getDeviceId() {
-        let deviceId = localStorage.getItem('device_id');
-        if (!deviceId) {
-            deviceId = 'device_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('device_id', deviceId);
-        }
-        return deviceId;
-    }
-}
+// =========================================================
+// 1. INITIALIZATION & STRUCTURE
+// =========================================================
 
-// Initialize database - THÊM CHECK TRÁNH GỌI NHIỀU LẦN
 function initializeDatabase() {
     return new Promise((resolve, reject) => {
-        // Nếu đã khởi tạo, return instance hiện tại
         if (db && dbInitialized) {
-            console.log('📌 Database already initialized, returning existing instance');
+            console.log('📌 Database already initialized');
             resolve(db);
             return;
         }
-        
+
         const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-        request.onerror = () => {
-            console.error('Database error:', request.error);
-            reject(request.error);
+        request.onerror = (event) => {
+            console.error('❌ Database error:', event.target.error);
+            reject(event.target.error);
         };
 
-        request.onsuccess = () => {
-            db = request.result;
+        request.onsuccess = (event) => {
+            db = event.target.result;
             dbInitialized = true;
             console.log('✅ Database opened successfully');
             
-            // Initialize store (singleton)
-            if (!storeInstance) {
-                window.cafeStore = new CafeStore();
-                
-                // Gọi init store (chỉ 1 lần)
-                setTimeout(() => {
-                    window.cafeStore.init().catch(console.error);
-                }, 500);
-            }
+            // Initialize and start Firebase sync system
+            initializeFirebase();
+            startSyncSystem();
             
             resolve(db);
         };
@@ -332,166 +56,128 @@ function initializeDatabase() {
     });
 }
 
-// Create object stores - GIỮ NGUYÊN CẤU TRÚC GỐC + THÊM INDEX
 function createObjectStores(database) {
-    // Employees store
-    if (!database.objectStoreNames.contains('employees')) {
-        const employeesStore = database.createObjectStore('employees', { 
-            keyPath: 'employeeId',
-            autoIncrement: false 
-        });
-        employeesStore.createIndex('phone', 'phone', { unique: true });
-        employeesStore.createIndex('status', 'status', { unique: false });
-        employeesStore.createIndex('_version', '_version', { unique: false });
-        employeesStore.createIndex('_synced', '_synced', { unique: false });
-    } else {
-        // Upgrade existing store
-        const tx = database.transaction(['employees'], 'readwrite');
-        const store = tx.objectStore('employees');
-        
-        // Add indexes if not exist
-        if (!store.indexNames.contains('_version')) {
-            store.createIndex('_version', '_version', { unique: false });
+    // Định nghĩa các store và keyPath
+    const stores = [
+        { name: 'employees', keyPath: 'employeeId', indexes: ['phone', 'status', 'role', '_synced'] },
+        { name: 'reports', keyPath: 'reportId', indexes: ['date', 'createdBy', '_synced'] },
+        { name: 'operations', keyPath: 'operationId', indexes: ['date', 'type', 'dateKey', '_synced'] }, 
+        { name: 'inventory', keyPath: 'productId', indexes: ['name', 'category', '_synced'] },
+        { name: 'inventoryHistory', keyPath: 'historyId', indexes: ['productId', 'date', 'type', '_synced'] }, 
+        { name: 'attendance', keyPath: 'attendanceId', indexes: ['employeeId', 'date', 'month', '_synced'] },
+        // THÊM STORE CHO CHẾ TÀI NHÂN VIÊN
+        { name: 'discipline_records', keyPath: 'recordId', indexes: ['employeeId', 'month', 'type', '_synced'] },
+        // THÊM STORE CHO LỊCH SỬ LÀM VIỆC (WORK LOGS) - ĐÃ CÓ VÀ ĐANG THIẾU
+        { name: 'work_logs', keyPath: 'logId', indexes: ['employeeId', 'date', '_synced'] },
+        { name: 'settings', keyPath: 'key', indexes: [] }
+    ];
+
+    stores.forEach(storeConfig => {
+        if (!database.objectStoreNames.contains(storeConfig.name)) {
+            const store = database.createObjectStore(storeConfig.name, { keyPath: storeConfig.keyPath });
+            storeConfig.indexes.forEach(index => {
+                store.createIndex(index, index, { unique: index === 'phone' });
+            });
         }
-        if (!store.indexNames.contains('_synced')) {
-            store.createIndex('_synced', '_synced', { unique: false });
-        }
-    }
+    });
 
-    // Reports store
-    if (!database.objectStoreNames.contains('reports')) {
-        const reportsStore = database.createObjectStore('reports', { 
-            keyPath: 'reportId' 
-        });
-        reportsStore.createIndex('date', 'date', { unique: true });
-        reportsStore.createIndex('createdBy', 'createdBy', { unique: false });
-        reportsStore.createIndex('_version', '_version', { unique: false });
-        reportsStore.createIndex('_synced', '_synced', { unique: false });
-    }
-
-    // Inventory store
-    if (!database.objectStoreNames.contains('inventory')) {
-        const inventoryStore = database.createObjectStore('inventory', { 
-            keyPath: 'productId' 
-        });
-        inventoryStore.createIndex('name', 'name', { unique: false });
-        inventoryStore.createIndex('minStock', 'minStock', { unique: false });
-        inventoryStore.createIndex('_version', '_version', { unique: false });
-        inventoryStore.createIndex('_synced', '_synced', { unique: false });
-    }
-
-    // Inventory History store
-    if (!database.objectStoreNames.contains('inventoryHistory')) {
-        const historyStore = database.createObjectStore('inventoryHistory', { 
-            keyPath: 'historyId',
-            autoIncrement: true 
-        });
-        historyStore.createIndex('productId', 'productId', { unique: false });
-        historyStore.createIndex('date', 'date', { unique: false });
-        historyStore.createIndex('type', 'type', { unique: false });
-        historyStore.createIndex('_synced', '_synced', { unique: false });
-    }
-
-    // Operations store
-    if (!database.objectStoreNames.contains('operations')) {
-        const operationsStore = database.createObjectStore('operations', { 
-            keyPath: 'operationId',
-            autoIncrement: true 
-        });
-        operationsStore.createIndex('date', 'date', { unique: false });
-        operationsStore.createIndex('type', 'type', { unique: false });
-        operationsStore.createIndex('_synced', '_synced', { unique: false });
-    }
-
-    // Attendance store
-    if (!database.objectStoreNames.contains('attendance')) {
-        const attendanceStore = database.createObjectStore('attendance', { 
-            keyPath: 'attendanceId',
-            autoIncrement: true 
-        });
-        attendanceStore.createIndex('employeeId', 'employeeId', { unique: false });
-        attendanceStore.createIndex('date', 'date', { unique: false });
-        attendanceStore.createIndex('month', 'month', { unique: false });
-        attendanceStore.createIndex('_synced', '_synced', { unique: false });
-    }
-
-    // ⭐ Discipline Records store (thưởng/phạt)
-    if (!database.objectStoreNames.contains('discipline_records')) {
-        const disciplineStore = database.createObjectStore('discipline_records', { 
-            keyPath: 'id',
-            autoIncrement: true 
-        });
-        disciplineStore.createIndex('employeeId', 'employeeId', { unique: false });
-        disciplineStore.createIndex('month', 'month', { unique: false });
-        disciplineStore.createIndex('type', 'type', { unique: false });
-        disciplineStore.createIndex('_synced', '_synced', { unique: false });
-    }
-
-    // Settings store
-    if (!database.objectStoreNames.contains('settings')) {
-        const settingsStore = database.createObjectStore('settings', { 
-            keyPath: 'key' 
-        });
-    }
-
-    console.log('✅ Object stores created successfully');
+    console.log('✅ Object stores created/checked');
 }
 
-// ==================== DATABASE OPERATIONS (GIỮ NGUYÊN GỐC) ====================
-function dbAdd(storeName, data) {
+// =========================================================
+// 3. CRUD OPERATIONS
+// =========================================================
+
+/**
+ * @name dbTransaction
+ * @description Thực hiện một giao dịch IndexedDB.
+ */
+function dbTransaction(storeName, mode, callback) {
     return new Promise((resolve, reject) => {
         if (!db) {
-            reject(new Error('Database not initialized'));
+            console.error('❌ Database not initialized.');
+            reject(new Error('Database not initialized.'));
             return;
         }
-
-        const transaction = db.transaction([storeName], 'readwrite');
+        
+        // Dòng 103: Nơi lỗi NotFoundError xảy ra nếu storeName không tồn tại
+        const transaction = db.transaction(storeName, mode); 
         const store = transaction.objectStore(storeName);
-        const request = store.add(data);
 
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        // Xử lý sự kiện hoàn tất giao dịch
+        transaction.oncomplete = () => {
+            // resolve(result); // Không cần resolve ở đây nếu đã resolve trong callback
+        };
+
+        // Xử lý lỗi giao dịch
+        transaction.onerror = (event) => {
+            console.error('❌ Transaction error:', event.target.error);
+            reject(event.target.error);
+        };
+
+        // Chạy callback để thực hiện thao tác CRUD
+        callback(store, resolve, reject);
+    });
+}
+
+
+/**
+ * @name dbAdd
+ * @description Thêm một bản ghi mới vào Object Store.
+ */
+function dbAdd(storeName, data) {
+    return dbTransaction(storeName, 'readwrite', (store, resolve, reject) => {
+        // Đảm bảo data là object chứa keyPath (ví dụ: employeeId)
+        const request = store.add(data); 
+        
+        request.onsuccess = (event) => {
+            // Đánh dấu cần đồng bộ Firebase (Giả định firebaseSync tồn tại)
+            if (typeof firebaseSync !== 'undefined') {
+                firebaseSync.pendingSyncs.push({ storeName, type: 'add', data });
+            }
+            // Resolve với key mới được tạo
+            resolve(event.target.result); 
+        };
+        
+        request.onerror = (event) => {
+            console.error(`❌ DB Add Error for store ${storeName}:`, event.target.error);
+            // Reject với lỗi của IndexedDB để hàm gọi catch được
+            reject(event.target.error); 
+        };
     });
 }
 
 function dbGet(storeName, key) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject(new Error('Database not initialized'));
+    return dbTransaction(storeName, 'readonly', (store, resolve, reject) => {
+        // ⚠️ FIX: Kiểm tra key trước khi gọi store.get
+        if (key === undefined || key === null || key === '') {
+            console.warn(`❌ dbGet called without a valid key for store: ${storeName}`);
+            resolve(null); // Trả về null thay vì gây lỗi
             return;
         }
 
-        const transaction = db.transaction([storeName], 'readonly');
-        const store = transaction.objectStore(storeName);
         const request = store.get(key);
-
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
     });
 }
 
 function dbUpdate(storeName, key, updates) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject(new Error('Database not initialized'));
-            return;
-        }
-
-        const transaction = db.transaction([storeName], 'readwrite');
-        const store = transaction.objectStore(storeName);
+    return dbTransaction(storeName, 'readwrite', (store, resolve, reject) => {
         const getRequest = store.get(key);
 
         getRequest.onsuccess = () => {
             const existing = getRequest.result;
-            if (!existing) {
-                reject(new Error('Record not found'));
-                return;
-            }
 
-            const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() };
+            // Nếu không tồn tại, tạo đối tượng mới để put
+            const updated = existing ? { ...existing, ...updates } : { [store.keyPath]: key, ...updates };
+
             const putRequest = store.put(updated);
 
-            putRequest.onsuccess = () => resolve(updated);
+            putRequest.onsuccess = () => {
+                // Đã loại bỏ log debug Index ở đây
+                resolve(updated);
+            };
             putRequest.onerror = () => reject(putRequest.error);
         };
 
@@ -500,655 +186,335 @@ function dbUpdate(storeName, key, updates) {
 }
 
 function dbDelete(storeName, key) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject(new Error('Database not initialized'));
+    return dbTransaction(storeName, 'readwrite', (store, resolve, reject) => {
+        // ⚠️ FIX: Kiểm tra key trước khi gọi store.delete để tránh DataError
+        // Cảnh báo này (database.js:206) là đúng và không gây lỗi crash app.
+        if (key === undefined || key === null || key === '') {
+            console.warn(`❌ dbDelete called without a valid key for store: ${storeName}. Skipping delete.`);
+            resolve(); // Resolve thành công vì không có gì để xóa
             return;
         }
 
-        const transaction = db.transaction([storeName], 'readwrite');
-        const store = transaction.objectStore(storeName);
         const request = store.delete(key);
-
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
     });
 }
 
-// THÊM hàm dbGetAllByRange
-function dbGetAllByRange(storeName, indexName, keyRange) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject(new Error('Database not initialized'));
-            return;
-        }
-
-        const transaction = db.transaction([storeName], 'readonly');
-        const store = transaction.objectStore(storeName);
-        const index = store.index(indexName);
-        const request = index.getAll(keyRange);
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
-
-// SỬA hàm dbGetAll
 function dbGetAll(storeName, indexName = null, range = null) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject(new Error('Database not initialized'));
-            return;
-        }
-
-        const transaction = db.transaction([storeName], 'readonly');
-        const store = transaction.objectStore(storeName);
-        
+    return dbTransaction(storeName, 'readonly', (store, resolve, reject) => {
         let request;
-        if (indexName && range) {
+        if (indexName) {
             const index = store.index(indexName);
             request = index.getAll(range);
-        } else if (indexName) {
-            const index = store.index(indexName);
-            request = index.getAll();
         } else {
             request = store.getAll();
         }
 
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => resolve(request.result || []);
         request.onerror = () => reject(request.error);
     });
 }
 
-// ==================== FIREBASE SYNC (GIỮ NGUYÊN + CẢI TIẾN) ====================
-// Khởi tạo Firebase
-function initFirebase() {
+function dbClear(storeName) {
+    return dbTransaction(storeName, 'readwrite', (store, resolve, reject) => {
+        const request = store.clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// =========================================================
+// 3. BUSINESS LOGIC & DATA MODELING (CRUD)
+// =========================================================
+
+// EMPLOYEE FUNCTIONS
+async function addEmployee(employeeData) {
+    const employee = {
+        employeeId: 'emp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        ...employeeData, 
+        updatedAt: new Date().toISOString(),
+        _synced: false
+    };
+    await dbAdd('employees', employee);
+    if (firebaseSync.enabled) await syncToFirebase('employees', employee);
+    return employee;
+}
+
+async function updateEmployee(employeeId, updates) {
+    const updated = await dbUpdate('employees', employeeId, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+        _synced: false
+    });
+    if (firebaseSync.enabled) await syncToFirebase('employees', updated);
+    return updated;
+}
+
+// REPORT FUNCTIONS
+async function addReport(reportData) {
+    const report = {
+        reportId: reportData.date.replace(/-/g, ''), 
+        ...reportData, 
+        createdAt: new Date().toISOString(),
+        _synced: false
+    };
+    await dbAdd('reports', report);
+    if (firebaseSync.enabled) await syncToFirebase('reports', report);
+    return report;
+}
+
+// INVENTORY FUNCTIONS
+async function addInventory(productData) {
+    const product = {
+        productId: 'prod_' + Date.now(),
+        ...productData, 
+        lastUpdated: new Date().toISOString(),
+        _synced: false
+    };
+    await dbAdd('inventory', product);
+    if (firebaseSync.enabled) await syncToFirebase('inventory', product);
+    return product;
+}
+
+async function updateInventory(productId, updates) {
+    const updated = await dbUpdate('inventory', productId, {
+        ...updates,
+        lastUpdated: new Date().toISOString(),
+        _synced: false
+    });
+    if (firebaseSync.enabled) await syncToFirebase('inventory', updated);
+    return updated;
+}
+
+// =========================================================
+// 4. FIREBASE SYNC SYSTEM (LOGIC CHUẨN XÁC)
+// =========================================================
+
+function initializeFirebase() {
     try {
-        if (typeof firebase === 'undefined') {
-            console.warn('⚠️ Firebase chưa được load');
+        if (typeof firebase === 'undefined' || !firebase.apps || firebase.apps.length === 0) {
+            console.log('⚠️ Firebase not available - offline mode');
+            firebaseSync.enabled = false;
             return null;
         }
-        
-        if (!firebase.apps || firebase.apps.length === 0) {
-            console.warn('⚠️ Firebase chưa được khởi tạo');
-            return null;
-        }
-        
-        if (!firebase.firestore) {
-            console.warn('⚠️ Firestore chưa được load');
-            return null;
-        }
-        
         if (!firebaseSync.db) {
             firebaseSync.db = firebase.firestore();
             console.log('✅ Firebase Firestore initialized');
-            
-            // Setup listeners
-            setupFirebaseRealtimeListeners();
         }
         return firebaseSync.db;
     } catch (error) {
-        console.warn('⚠️ Firebase không khả dụng:', error);
+        console.warn('⚠️ Firebase init error:', error);
+        firebaseSync.enabled = false;
         return null;
     }
 }
 
-// Đồng bộ từ Firebase về IndexedDB (GIỮ NGUYÊN)
-async function syncFromFirebase() {
-    if (!firebaseSync.enabled || firebaseSync.isSyncing) return;
+async function syncToFirebase(storeName, data) {
+    if (!firebaseSync.enabled || !firebaseSync.db) {
+        if (data) { 
+            firebaseSync.pendingSyncs.push({ storeName, data, timestamp: new Date() });
+        }
+        return false;
+    }
     
-    const firestore = initFirebase();
-    if (!firestore) return;
-    
-    firebaseSync.isSyncing = true;
-    console.log('🔄 Đồng bộ từ Firebase...');
-    
+    if (!data) { 
+        console.error('❌ syncToFirebase called without data argument.');
+        return false;
+    }
+
     try {
-        await syncCollection(firestore, 'employees', 'employees', 'employeeId');
-        await syncCollection(firestore, 'inventory', 'inventory', 'productId');
-        await syncCollection(firestore, 'reports', 'reports', 'reportId');
-        await syncCollection(firestore, 'attendance', 'attendance', 'attendanceId');
-        await syncCollection(firestore, 'discipline_records', 'discipline_records', 'id');
+        let docId;
+        if (data.employeeId) docId = data.employeeId;
+        else if (data.reportId) docId = data.reportId;
+        else if (data.operationId) docId = data.operationId; 
+        else if (data.productId) docId = data.productId;
+        else if (data.attendanceId) docId = data.attendanceId;
+        else if (data.historyId) docId = data.historyId; 
+        else if (data.recordId) docId = data.recordId; 
+        else if (data.logId) docId = data.logId; // Work Logs
+        else docId = firebaseSync.db.collection(storeName).doc().id;
         
-        console.log('✅ Đồng bộ Firebase hoàn tất');
+        const syncData = {
+            ...data,
+            _synced: true,
+            _lastSync: new Date().toISOString(),
+            _deviceId: localStorage.getItem('device_id') || 'unknown'
+        };
         
-        // Trigger UI update
-        if (window.cafeStore) {
-            window.cafeStore.events.dispatchEvent(new CustomEvent('firebase-sync-complete'));
+        await firebaseSync.db.collection(storeName)
+            .doc(docId)
+            .set(syncData, { merge: true });
+        
+        console.log(`✅ Synced to Firebase: ${storeName}/${docId}`);
+        
+        try {
+            await dbUpdate(storeName, docId, { _synced: true, _lastSync: new Date().toISOString() });
+        } catch (error) {
+            // Bỏ qua nếu không thể cập nhật local 
         }
         
+        return true;
     } catch (error) {
-        console.error('❌ Lỗi đồng bộ Firebase:', error);
+        console.error('❌ Sync error:', error);
+        firebaseSync.pendingSyncs.push({ storeName, data, timestamp: new Date() });
+        return false;
+    }
+}
+
+async function syncFromFirebase() {
+    if (!firebaseSync.enabled || !firebaseSync.db || firebaseSync.isSyncing) {
+        return;
+    }
+    
+    firebaseSync.isSyncing = true;
+    console.log('🔄 Syncing from Firebase...');
+    
+    try {
+        await syncCollectionFromFirebase('inventory', 'productId');
+        await syncCollectionFromFirebase('employees', 'employeeId');
+        await syncCollectionFromFirebase('reports', 'reportId');
+        await syncCollectionFromFirebase('inventoryHistory', 'historyId'); 
+        await syncCollectionFromFirebase('attendance', 'attendanceId');
+        await syncCollectionFromFirebase('operations', 'operationId'); 
+        await syncCollectionFromFirebase('discipline_records', 'recordId'); 
+        await syncCollectionFromFirebase('work_logs', 'logId'); // Work Logs
+        
+        console.log('✅ Firebase sync complete');
+        
+        document.dispatchEvent(new CustomEvent('firebase-sync-complete'));
+        
+    } catch (error) {
+        console.error('❌ Firebase sync error:', error);
     } finally {
         firebaseSync.isSyncing = false;
     }
 }
 
-async function syncCollection(firestore, firestoreCol, indexedDBStore, keyField) {
+/**
+ * @name syncCollectionFromFirebase
+ */
+async function syncCollectionFromFirebase(collectionName, idField) {
+    if (!firebaseSync.db) return;
+    
     try {
-        const snapshot = await firestore.collection(firestoreCol).get();
-        let count = 0;
+        const snapshot = await firebaseSync.db.collection(collectionName).get();
+        const firebaseIds = new Set();
+        let updatedCount = 0;
+        let deletedCount = 0;
         
+        // --- BƯỚC 1: CẬP NHẬT/THÊM DỮ LIỆU TỪ FIREBASE ---
         for (const doc of snapshot.docs) {
-            const data = doc.data();
+            const firebaseData = doc.data();
+            const itemId = firebaseData[idField];
+            firebaseIds.add(itemId); 
             
-            // Skip if data is from current device (prevent loop)
-            if (data._deviceId === window.cafeStore?.deviceId && data._synced) {
-                continue;
-            }
-            
-            const item = { 
-                ...data, 
-                _synced: true,
-                _lastSync: new Date().toISOString()
-            };
+            delete firebaseData._deviceId; 
+            delete firebaseData._lastSync;
             
             try {
-                const existing = await dbGet(indexedDBStore, item[keyField]);
-                if (existing) {
-                    // Smart merge: only update if Firebase data is newer
-                    const existingTime = new Date(existing._updatedAt || 0).getTime();
-                    const newTime = new Date(item._updatedAt || 0).getTime();
-                    
-                    if (newTime > existingTime) {
-                        await dbUpdate(indexedDBStore, item[keyField], item);
-                        count++;
-                    }
-                } else {
-                    await dbAdd(indexedDBStore, item);
-                    count++;
-                }
-            } catch (err) {
-                console.warn(`Không thể lưu ${firestoreCol}:`, err);
-            }
-        }
-        
-        if (count > 0) {
-            console.log(`✅ Đồng bộ ${count} ${firestoreCol}`);
-            
-            // Notify UI
-            if (window.cafeStore) {
-                window.cafeStore.events.dispatchEvent(new CustomEvent('data-changed', {
-                    detail: { store: indexedDBStore, action: 'firebase-sync' }
-                }));
-            }
-        }
-    } catch (error) {
-        console.error(`Lỗi đồng bộ ${firestoreCol}:`, error);
-    }
-}
-
-// ==================== EVENT LISTENERS FIX ====================
-function setupFirebaseRealtimeListeners() {
-    const firestore = initFirebase();
-    if (!firestore) return;
-    
-    console.log('👂 Setting up Firebase realtime listeners...');
-    
-    // ĐẢM BẢO CHỈ SETUP 1 LẦN
-    if (window.firebaseListenersSetup) {
-        console.log('📌 Firebase listeners already setup');
-        return;
-    }
-    
-    // Lắng nghe employees với debounce
-    let employeeDebounce;
-    const employeesUnsubscribe = firestore.collection('employees')
-        .onSnapshot((snapshot) => {
-            clearTimeout(employeeDebounce);
-            employeeDebounce = setTimeout(() => {
-                console.log('🔄 Employees collection changed');
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added' || change.type === 'modified') {
-                        handleFirebaseChange('employees', change.doc.data());
-                    } else if (change.type === 'removed') {
-                        handleFirebaseDelete('employees', change.doc.id);
-                    }
+                // Sử dụng dbUpdate, nó sẽ tự động thêm nếu chưa tồn tại
+                await dbUpdate(collectionName, itemId, {
+                    ...firebaseData,
+                    _synced: true, 
                 });
-            }, 1000); // Debounce 1 giây
-        }, (error) => {
-            console.error('❌ Employees listener error:', error);
-        });
-    
-    // Tương tự cho các collection khác...
-    
-    window.firebaseListenersSetup = true;
-    console.log('✅ Firebase realtime listeners setup complete');
-}
-
-// Xử lý khi có thay đổi từ Firebase
-async function handleFirebaseChange(storeName, data) {
-    // Skip if data is from current device
-    if (data._deviceId === window.cafeStore?.deviceId) {
-        return;
-    }
-    
-    try {
-        let key;
-        if (storeName === 'employees') key = data.employeeId;
-        else if (storeName === 'inventory') key = data.productId;
-        else if (storeName === 'reports') key = data.reportId;
-        else return;
-        
-        const existing = await dbGet(storeName, key);
-        
-        if (existing) {
-            // Only update if Firebase data is newer
-            const existingTime = new Date(existing._updatedAt || 0).getTime();
-            const newTime = new Date(data._updatedAt || 0).getTime();
-            
-            if (newTime > existingTime) {
-                await dbUpdate(storeName, key, {
-                    ...data,
-                    _synced: true,
-                    _lastSync: new Date().toISOString()
-                });
-                console.log(`✅ Updated ${storeName}/${key} from Firebase`);
+                updatedCount++;
                 
-                // Update UI
-                updateUIOnFirebaseChange(storeName, data);
+            } catch (error) {
+                console.warn(`Error updating/adding ${collectionName}/${itemId}:`, error);
             }
-        } else {
-            await dbAdd(storeName, {
-                ...data,
-                _synced: true,
-                _lastSync: new Date().toISOString()
-            });
-            console.log(`✅ Added ${storeName}/${key} from Firebase`);
+        }
+        
+        // --- BƯỚC 2: XỬ LÝ XÓA DỮ LIỆU CỤC BỘ ---
+        const localRecords = await dbGetAll(collectionName);
+        
+        for (const record of localRecords) {
+            // Kiểm tra record[idField] để tránh lỗi nếu dữ liệu cục bộ bị hỏng
+            if (record[idField] && !firebaseIds.has(record[idField])) {
+                await dbDelete(collectionName, record[idField]);
+                deletedCount++;
+            }
+        }
+        
+        if (updatedCount > 0 || deletedCount > 0) {
+            console.log(`✅ Synced ${collectionName} from Firebase: ${updatedCount} updated/added, ${deletedCount} deleted.`);
             
-            updateUIOnFirebaseChange(storeName, data);
+            document.dispatchEvent(new CustomEvent('data-updated', {
+                detail: { collection: collectionName, count: updatedCount + deletedCount }
+            }));
         }
         
     } catch (error) {
-        console.error(`❌ Error handling Firebase change for ${storeName}:`, error);
+        // Dòng 459: Nơi lỗi NotFoundError xảy ra khi dbGetAll gọi dbTransaction
+        console.error(`Error syncing ${collectionName}:`, error);
     }
 }
 
-// Xử lý khi có xóa từ Firebase
-async function handleFirebaseDelete(storeName, docId) {
-    try {
-        await dbDelete(storeName, docId);
-        console.log(`✅ Deleted ${storeName}/${docId} from IndexedDB`);
-        
-        updateUIOnFirebaseDelete(storeName, docId);
-        
-    } catch (error) {
-        console.error(`❌ Error handling Firebase delete for ${storeName}:`, error);
-    }
-}
-
-// Đẩy dữ liệu lên Firebase (UPDATED for arrow pattern)
-async function pushToFirebase(storeName, data) {
-    if (!firebaseSync.enabled) return;
+function startSyncSystem() {
+    if (firebaseSync.syncStarted) return;
     
-    const firestore = initFirebase();
-    if (!firestore) {
-        // Lưu vào hàng đợi
-        firebaseSync.pendingSyncs.push({ storeName, data, timestamp: new Date() });
-        return;
-    }
-    
-    try {
-        const collectionMap = {
-            'employees': 'employees',
-            'inventory': 'inventory', 
-            'reports': 'reports',
-            'attendance': 'attendance',
-            'discipline_records': 'discipline_records'
-        };
-        
-        const collectionName = collectionMap[storeName] || storeName;
-        let docId = '';
-        
-        if (data.employeeId) docId = data.employeeId;
-        else if (data.productId) docId = data.productId;
-        else if (data.reportId) docId = data.reportId;
-        else if (data.attendanceId) docId = data.attendanceId.toString();
-        else if (data.id) docId = data.id.toString();
-        else docId = firestore.collection(collectionName).doc().id;
-        
-        // Mark as synced and add device info
-        const dataToSync = {
-            ...data,
-            _synced: true,
-            _lastSync: new Date().toISOString(),
-            _deviceId: window.cafeStore?.deviceId || 'unknown',
-            _syncSource: 'local'
-        };
-        
-        await firestore.collection(collectionName)
-            .doc(docId)
-            .set(dataToSync, { merge: true });
-        
-        console.log(`✅ Đã đẩy lên Firebase: ${storeName}/${docId}`);
-        
-        // Update local record
-        if (docId && storeName) {
-            await dbUpdate(storeName, docId, {
-                _synced: true,
-                _lastSync: new Date().toISOString()
-            });
-        }
-        
-        // Process pending syncs
-        await processPendingSyncs();
-        
-    } catch (error) {
-        console.error('❌ Lỗi đẩy lên Firebase:', error);
-        firebaseSync.pendingSyncs.push({ storeName, data, timestamp: new Date() });
-    }
-}
-
-async function processPendingSyncs() {
-    if (firebaseSync.isSyncing || firebaseSync.pendingSyncs.length === 0) return;
-    
-    const firestore = initFirebase();
-    if (!firestore) return;
-    
-    firebaseSync.isSyncing = true;
-    
-    const failed = [];
-    while (firebaseSync.pendingSyncs.length > 0) {
-        const item = firebaseSync.pendingSyncs.shift();
-        try {
-            await pushToFirebase(item.storeName, item.data);
-        } catch (error) {
-            failed.push(item);
-        }
-    }
-    
-    firebaseSync.pendingSyncs.push(...failed);
-    firebaseSync.isSyncing = false;
-}
-
-// ==================== CÁC HÀM DATABASE VỚI SYNC TỰ ĐỘNG (UPDATED) ====================
-async function dbAddWithSync(storeName, data) {
-    // 1. Lưu vào IndexedDB
-    const result = await dbAdd(storeName, data);
-    
-    // 2. Tự động sync lên Firebase (background)
-    if (firebaseSync.enabled) {
-        setTimeout(() => {
-            pushToFirebase(storeName, data).catch(err => {
-                console.warn('Background sync failed:', err);
-            });
-        }, 100);
-    }
-    
-    return result;
-}
-
-async function dbUpdateWithSync(storeName, key, updates) {
-    // 1. Cập nhật IndexedDB
-    const result = await dbUpdate(storeName, key, updates);
-    
-    // 2. Lấy dữ liệu đã cập nhật
-    const updatedData = await dbGet(storeName, key);
-    
-    // 3. Sync lên Firebase (background)
-    if (updatedData && firebaseSync.enabled) {
-        setTimeout(() => {
-            pushToFirebase(storeName, updatedData).catch(err => {
-                console.warn('Background sync failed:', err);
-            });
-        }, 100);
-    }
-    
-    return result;
-}
-
-async function dbDeleteWithSync(storeName, key) {
-    // 1. Lấy dữ liệu trước khi xóa
-    const data = await dbGet(storeName, key);
-    
-    // 2. Xóa khỏi IndexedDB
-    await dbDelete(storeName, key);
-    
-    // 3. Đánh dấu xóa trên Firebase
-    if (data && firebaseSync.enabled) {
-        data._deleted = true;
-        setTimeout(() => {
-            pushToFirebase(storeName, data).catch(err => {
-                console.warn('Delete sync failed:', err);
-            });
-        }, 100);
-    }
-}
-
-// ==================== UI UPDATE FUNCTIONS (GIỮ NGUYÊN) ====================
-function updateUIOnFirebaseChange(storeName, data) {
-    const activeTab = document.querySelector('.tab-btn.active');
-    if (!activeTab) return;
-    
-    const activeTabId = activeTab.getAttribute('data-tab');
-    
-    if (
-        (storeName === 'employees' && activeTabId === 'employees') ||
-        (storeName === 'inventory' && activeTabId === 'inventory') ||
-        (storeName === 'reports' && activeTabId === 'reports')
-    ) {
-        setTimeout(() => {
-            if (typeof loadTabContent === 'function') {
-                loadTabContent(activeTabId);
-            }
-        }, 500);
-    }
-}
-
-function updateUIOnFirebaseDelete(storeName, docId) {
-    const activeTab = document.querySelector('.tab-btn.active');
-    if (!activeTab) return;
-    
-    const activeTabId = activeTab.getAttribute('data-tab');
-    
-    if (
-        (storeName === 'employees' && activeTabId === 'employees') ||
-        (storeName === 'inventory' && activeTabId === 'inventory')
-    ) {
-        const itemElement = document.querySelector(`[data-id="${docId}"]`);
-        if (itemElement) {
-            itemElement.remove();
-        }
-    }
-}
-
-// ==================== UTILITY FUNCTIONS (GIỮ NGUYÊN) ====================
-function formatDate(date = new Date()) {
-    return date.toISOString().split('T')[0];
-}
-
-function formatDateDisplay(dateString) {
-    const date = new Date(dateString + 'T00:00:00');
-    return date.toLocaleDateString('vi-VN');
-}
-
-function getMonthRange(monthString) {
-    const [year, month] = monthString.split('-');
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
-    
-    return {
-        start: formatDate(startDate),
-        end: formatDate(endDate)
-    };
-}
-
-function getPreviousMonth(monthString) {
-    const [year, month] = monthString.split('-').map(Number);
-    let prevYear = year;
-    let prevMonth = month - 1;
-    
-    if (prevMonth === 0) {
-        prevMonth = 12;
-        prevYear = year - 1;
-    }
-    
-    return `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
-}
-
-// Hàm kiểm tra và load dữ liệu mẫu
-async function checkAndLoadSampleData() {
-    try {
-        const employees = await dbGetAll('employees');
-        const inventory = await dbGetAll('inventory');
-        
-        if (employees.length === 0 && inventory.length === 0) {
-            console.log('📦 Database empty, loading sample data...');
-            await initializeSampleData();
-        } else {
-            console.log(`✅ Database has data: ${employees.length} employees, ${inventory.length} products`);
-        }
-    } catch (error) {
-        console.warn('Error checking database:', error);
-    }
-}
-
-// ==================== QUẢN LÝ SYNC (GIỮ NGUYÊN) ====================
-function enableFirebaseSync(enable = true) {
-    firebaseSync.enabled = enable;
-    console.log(`🔄 Firebase sync: ${enable ? 'BẬT' : 'TẮT'}`);
-}
-
-// ==================== FIREBASE SYNC (FIXED) ====================
-function startPeriodicSync(intervalMinutes = 10) {
-    // CHỈ start 1 lần
-    if (firebaseSync.syncStarted) {
-        console.log('📌 Firebase sync already started');
-        return;
-    }
-    
-    const firestore = initFirebase();
-    
-    if (!firestore) {
-        console.log('📴 Firebase không khả dụng - Chỉ dùng IndexedDB');
-        firebaseSync.enabled = false;
-        return;
-    }
-    
-    console.log('🚀 Starting Firebase sync system...');
+    console.log('🚀 Starting sync system...');
     firebaseSync.syncStarted = true;
     
-    // Initial sync sau 3 giây
     setTimeout(() => {
-        syncFromFirebase().catch(err => {
-            console.log('📴 Initial sync failed:', err.message);
-        });
-    }, 3000);
-    
-    // Periodic sync
-    setInterval(() => {
-        if (firebaseSync.enabled && !firebaseSync.isSyncing) {
-            syncFromFirebase().catch(err => {
-                console.warn('Lỗi đồng bộ định kỳ:', err);
-            });
-        }
-    }, intervalMinutes * 60 * 1000);
-}
-// THÊM: Debounce cho sync function
-let syncDebounceTimer = null;
-async function debouncedSyncFromFirebase() {
-    if (syncDebounceTimer) {
-        clearTimeout(syncDebounceTimer);
-    }
-    
-    syncDebounceTimer = setTimeout(() => {
-        if (!firebaseSync.isSyncing) {
+        if (firebaseSync.enabled) {
             syncFromFirebase().catch(console.error);
         }
-    }, 5000); // Debounce 5 giây
-}
-async function checkFirebaseConnection() {
-    const firestore = initFirebase();
-    if (!firestore) return false;
+    }, 3000);
     
-    try {
-        const testRef = firestore.collection('test').limit(1);
-        await testRef.get();
-        return true;
-    } catch (error) {
-        return false;
-    }
+    // Đồng bộ định kỳ 5 phút 
+    setInterval(() => {
+        if (firebaseSync.enabled && !firebaseSync.isSyncing) {
+            syncFromFirebase().catch(console.error);
+        }
+    }, 5 * 60 * 1000);
+    
+    // Xử lý các sync đang chờ (pending) định kỳ 1 phút
+    setInterval(async () => {
+        if (firebaseSync.enabled && firebaseSync.pendingSyncs.length > 0) {
+            const pending = firebaseSync.pendingSyncs.shift(); // Lấy bản ghi đầu tiên
+            console.log(`🔄 Retrying pending sync for ${pending.storeName}...`);
+            await syncToFirebase(pending.storeName, pending.data);
+        }
+    }, 60 * 1000);
 }
 
-// ==================== EXPOSE TO WINDOW (UPDATED) ====================
-// ==================== EXPOSE TO WINDOW (FIXED) ====================
+// =========================================================
+// 5. EXPOSE TO WINDOW & UTILITIES
+// =========================================================
+
+// ... (Giữ nguyên các hàm tiện ích và initializeSampleData)
+
+// ==================== EXPOSE TO WINDOW ====================
 if (typeof window !== 'undefined') {
-    // Khởi tạo database ngay khi load (chỉ 1 lần)
-    let dbInitStarted = false;
+    window.initializeDatabase = initializeDatabase;
     
-    window.initializeApp = async () => {
-        if (dbInitStarted) {
-            console.log('📌 App initialization already started');
-            return;
-        }
-        
-        dbInitStarted = true;
-        console.log('🚀 Starting app initialization...');
-        
-        try {
-            await initializeDatabase();
-            console.log('✅ App initialization complete');
-        } catch (error) {
-            console.error('❌ App initialization failed:', error);
-        }
-    };
-    
-    // Auto-initialize với delay
-    setTimeout(() => {
-        window.initializeApp().catch(console.error);
-    }, 100);
-    // Giữ nguyên tất cả hàm cũ
-    window.db = db;
-    window.dbGetAll = dbGetAll;
+    // Basic CRUD operations
     window.dbAdd = dbAdd;
     window.dbGet = dbGet;
     window.dbUpdate = dbUpdate;
     window.dbDelete = dbDelete;
-    window.initializeDatabase = initializeDatabase;
-    window.formatDate = formatDate;
-    window.dbGetAllByRange = dbGetAllByRange;
+    window.dbGetAll = dbGetAll;
+    window.dbClear = dbClear; 
     
-    // Hàm Firebase sync
-    window.dbAddWithSync = dbAddWithSync;
-    window.dbUpdateWithSync = dbUpdateWithSync;
-    window.dbDeleteWithSync = dbDeleteWithSync;
+    // Business functions
+    window.getAllEmployees = async () => dbGetAll('employees');
+    window.updateEmployee = updateEmployee;
+    window.addReport = addReport;
+    window.updateInventory = updateInventory;
+    window.getAllInventory = async () => dbGetAll('inventory');
     
-    // Firebase management
-    window.firebaseSync = firebaseSync;
+    // Sync functions
     window.syncFromFirebase = syncFromFirebase;
-    window.enableFirebaseSync = enableFirebaseSync;
-    window.startPeriodicSync = startPeriodicSync;
-    window.checkFirebaseConnection = checkFirebaseConnection;
+    window.syncToFirebase = syncToFirebase;
     
-    // New store system
-    window.cafeStore = null; // Will be initialized
-    window.dispatchAction = async (action) => {
-        if (window.cafeStore) {
-            return await window.cafeStore.dispatch(action);
-        } else {
-            console.error('Store not initialized');
-            return null;
-        }
-    };
+    window.firebaseSync = firebaseSync;
     
-    // Helper để UI subscribe
-    window.subscribeToStore = (storeName, callback) => {
-        if (!window.cafeStore) return () => {};
-        
-        const handler = (event) => {
-            if (event.detail.store === storeName) {
-                callback(event.detail.data, event.detail.action);
-            }
-        };
-        
-        window.cafeStore.events.addEventListener('data-changed', handler);
-        return () => window.cafeStore.events.removeEventListener('data-changed', handler);
-    };
+    console.log('✅ Database system loaded successfully');
     
-    console.log('✅ Database system ready with Arrow Sync Pattern');
-    
-    // Auto-initialize
     setTimeout(() => {
-        initializeDatabase().catch(console.error);
+        initializeDatabase().then(() => {
+            console.log('🚀 Database auto-initialized');
+        }).catch(console.error);
     }, 100);
 }

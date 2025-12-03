@@ -615,72 +615,55 @@ function handleReportsClick(e) {
     
     console.log('🔍 Click detected - Action:', action, 'Target:', target);
 
+    // --- XỬ LÝ CLICK XUẤT KHO ---
+
+    const exportRow = target.closest('.export-row');
+
+    if (exportRow) {
+        const productId = exportRow.dataset.productId;
+        
+        // 1. Xử lý GIẢM: Nếu click trực tiếp vào nút có data-action="decrease-export"
+        if (action === 'decrease-export') {
+            console.log(`📉 Decreasing export for: ${productId}`);
+            decreaseExport(productId);
+            return;
+        }
+        
+        // 2. Xử lý TĂNG: Nếu click vào bất kỳ chỗ nào khác trong hàng (bao gồm tên SP)
+        if (productId) {
+            console.log(`⬆️ Increasing export for: ${productId}`);
+            increaseExport(productId);
+            return;
+        }
+    }
+    
+    // --- XỬ LÝ CÁC HÀNH ĐỘNG KHÁC (GIỮ NGUYÊN) ---
+
     if (action === "toggle-reports-history") {
         toggleReportsHistoryTab();
         return;
     }
     
-    
-    
     if (action === "toggle-inventory-list") {
         toggleInventoryList();
         return;
     }
+    
+    // ... (Giữ nguyên các khối logic if/else if cho save-report, show-expenses, v.v.)
     if (action === "clear-all-data") clearAllData();
     else if (action === "clear-device-id") clearDeviceId();
-    else if (action === "debug-exports") debugExportsDetailed();
-    else if (action === "add-sample-exports") addSampleExports();
-
-    
-    // FIX: Thêm handler cho lịch sử xuất kho
-    if (action === "show-exports-history") {
-        console.log('📦 Opening exports history popup...');
-        showExportsHistoryPopup();
-        return;
-    }
-    
-    // FIX: Xử lý click vào dòng export
-    if (target.closest('.export-row') && target.dataset.action !== 'decrease-export') {
-        const productId = target.closest('.export-row').dataset.productId;
-        if (productId) increaseExport(productId);
-        return;
-    }
-    
-    if (action === "show-expenses") {
+    else if (action === "show-expenses") {
         console.log('💰 Opening expenses popup...');
         showExpensesPopup();
-    } 
+    }    
     else if (action === "show-transfers") {
         console.log('🏦 Opening transfers popup...');
         showTransfersPopup();
-    } 
+    }    
     else if (action === "save-report") {
         saveCurrentReport();
-    } 
-    else if (action === "copy-report") {
-        copyReportToClipboard();
-    } 
-    else if (action === "share-zalo") {
-        shareReportToZalo();
-    } 
-   
-    else if (action === "increase-export") {
-        const productId = target.dataset.productId || target.closest('[data-action="increase-export"]')?.dataset.productId;
-        if (productId) increaseExport(productId);
-    }
-    else if (action === "decrease-export") {
-        const productId = target.dataset.productId || target.closest('[data-action="decrease-export"]')?.dataset.productId;
-        if (productId) decreaseExport(productId);
-    }
-   
-    else if (action === "show-reports-history") {
-        showReportsHistoryPopup();
-    }
-    else if (action === "show-operations-history") {
-        showOperationsHistoryPopup();
-    }
+    }    
 }
-
     
 // FIX: Hàm fix tất cả số dư đầu kỳ
 async function fixAllOpeningBalances() {
@@ -953,27 +936,6 @@ async function debugAllReports() {
     }
 }
 
-// Gọi hàm này trong console để debug
-// debugAllReports();
-// FIX: Sửa hàm loadReportsTab - bỏ reset trạng thái đã lưu
-async function loadReportsTab() {
-    const container = document.getElementById('reports');
-    if (!container) return;
-
-    try {
-        showLoading(true);
-        currentReport = await getOrCreateReport(currentReportDate);
-        
-        // FIX: Bỏ reset hasSavedToday để cho phép sửa lại
-        renderReportsTab(container, currentReport);
-        setupReportsEventListeners();
-        showLoading(false);
-    } catch (error) {
-        console.error('Error loading reports tab:', error);
-        showMessage('Lỗi tải dữ liệu báo cáo', 'error');
-        showLoading(false);
-    }
-}
 
 
 async function renderExportsTable(currentExports) {
@@ -1011,44 +973,35 @@ async function renderExportsTable(currentExports) {
 
 
 
-// BỔ SUNG: Hàm giảm số lượng xuất kho (decreaseExport)
+/**
+ * @name decreaseExport
+ * @description Giảm số lượng xuất kho tạm thời cho một sản phẩm.
+ * @param {string} productId - ID sản phẩm.
+ */
 async function decreaseExport(productId) {
     if (!currentReport) return;
-
+    
     try {
-        let updatedExports = [...currentReport.exports];
-        let itemIndex = updatedExports.findIndex(exp => exp.productId === productId);
-
-        if (itemIndex > -1) {
-            if (updatedExports[itemIndex].quantity > 1) {
-                // Giảm số lượng
-                updatedExports[itemIndex].quantity -= 1;
-            } else {
-                // Xóa khỏi danh sách nếu số lượng = 1
-                updatedExports.splice(itemIndex, 1);
-            }
+        const index = currentReport.exports.findIndex(e => e.productId === productId);
+        
+        if (index !== -1) {
+            currentReport.exports[index].quantity -= 1;
             
-            // Cập nhật currentReport trong bộ nhớ
-            currentReport.exports = updatedExports;
-
-            // Cập nhật database
-            await dbUpdate('reports', currentReport.reportId, {
-                exports: updatedExports,
-                updatedBy: getCurrentUser().employeeId,
-                updatedAt: new Date().toISOString()
-            });
-
-            // Tải lại tab để refresh UI và tổng kết
-            loadReportsTab();
-        } else {
-            showMessage('Không có sản phẩm này trong danh sách xuất kho.', 'info');
+            // Loại bỏ khỏi mảng nếu số lượng bằng 0
+            if (currentReport.exports[index].quantity <= 0) {
+                currentReport.exports.splice(index, 1);
+            }
         }
-
+        
+        // Tự động cập nhật giao diện
+        await loadReportsTab();
+        
     } catch (error) {
-        console.error('Error decreasing export:', error);
-        showMessage('❌ Lỗi khi giảm số lượng xuất kho', 'error');
+        console.error('❌ Error decreasing export quantity:', error);
+        showMessage('❌ Lỗi khi giảm số lượng xuất kho tạm thời.', 'error');
     }
 }
+window.decreaseExport = decreaseExport;
 
 // FIX: Thêm hàm addFromInventory - click vào sản phẩm trong kho để thêm xuất kho
 async function addFromInventory(productId) {
@@ -2580,90 +2533,34 @@ async function getExportsHistoryForDate(date) {
     }
 }
 
-// FIX: Sửa hàm increaseExport - thêm log để debug
+/**
+ * @name increaseExport
+ * @description Tăng số lượng xuất kho tạm thời cho một sản phẩm.
+ * @param {string} productId - ID sản phẩm.
+ */
 async function increaseExport(productId) {
-    console.log('🎯 increaseExport CALLED for date:', currentReportDate, 'productId:', productId);
-    
     if (!currentReport) {
-        console.error('❌ currentReport is null!');
-        return;
+        currentReport = await getOrCreateReport(currentReportDate);
+    }
+    
+    const inventory = await dbGet('inventory', productId);
+    if (!inventory) return showMessage('❌ Sản phẩm không tồn tại.', 'error');
+    
+    const existingExport = currentReport.exports.find(e => e.productId === productId);
+    
+    if (existingExport) {
+        existingExport.quantity += 1;
+    } else {
+        currentReport.exports.push({
+            productId: productId,
+            quantity: 1
+        });
     }
 
-    try {
-        const product = await dbGet('inventory', productId);
-        if (!product) {
-            console.error('❌ Product not found:', productId);
-            showMessage('❌ Sản phẩm không tồn tại.', 'error');
-            return;
-        }
-
-        console.log('📦 Product found:', product.name);
-        console.log('📊 Current exports BEFORE:', currentReport.exports);
-
-        // Kiểm tra tồn kho
-        const currentExport = currentReport.exports.find(exp => exp.productId === productId);
-        const exportedQuantity = currentExport ? currentExport.quantity : 0;
-
-        console.log('📈 Export info:', {
-            currentExport: currentExport,
-            exportedQuantity: exportedQuantity,
-            productStock: product.currentQuantity
-        });
-
-        if (exportedQuantity >= product.currentQuantity) {
-            console.log('❌ Not enough stock');
-            showMessage(`❌ Tồn kho chỉ còn ${product.currentQuantity} ${product.unit}. Không thể xuất thêm.`, 'error');
-            return;
-        }
-
-        let updatedExports = [...currentReport.exports];
-        let itemIndex = updatedExports.findIndex(exp => exp.productId === productId);
-
-        if (itemIndex > -1) {
-            // Tăng số lượng
-            updatedExports[itemIndex].quantity += 1;
-            console.log('📈 Increased existing export:', updatedExports[itemIndex]);
-        } else {
-            // Thêm mới với ngày báo cáo
-            const newExport = {
-                productId: productId,
-                quantity: 1,
-                name: product.name,
-                unit: product.unit,
-                exportDate: currentReportDate, // Sử dụng ngày báo cáo
-                createdAt: new Date(currentReportDate + 'T12:00:00').toISOString() // Sử dụng ngày báo cáo
-            };
-            updatedExports.push(newExport);
-            console.log('🆕 Added new export for date:', currentReportDate, newExport);
-        }
-        
-        // Cập nhật currentReport
-        currentReport.exports = updatedExports;
-        console.log('📦 Current exports AFTER:', currentReport.exports);
-
-        // Cập nhật database
-        console.log('💾 Saving to database for date:', currentReportDate);
-        await dbUpdate('reports', currentReport.reportId, {
-            exports: updatedExports,
-            updatedBy: getCurrentUser().employeeId,
-            updatedAt: new Date().toISOString()
-        });
-        
-        console.log('✅ Database updated successfully for date:', currentReportDate);
-        
-        // Kiểm tra lại từ database
-        const reportFromDB = await dbGet('reports', currentReport.reportId);
-        console.log('🔄 Report from DB after update:', reportFromDB.exports);
-
-        // Tải lại tab
-        console.log('🔄 Reloading reports tab...');
-        loadReportsTab();
-
-    } catch (error) {
-        console.error('❌ Error in increaseExport:', error);
-        showMessage('❌ Lỗi khi tăng số lượng xuất kho', 'error');
-    }
+    // Tự động cập nhật giao diện
+    await loadReportsTab(); 
 }
+window.increaseExport = increaseExport;
 
 // FIX: Thêm hàm debug để kiểm tra lịch sử xuất kho
 async function debugExportsHistory() {
@@ -2800,74 +2697,7 @@ async function migrateExportsHistoryDate() {
     }
 }
 
-// FIX: Cập nhật hàm saveCurrentReport để đảm bảo xuất kho với ngày đúng
-async function saveCurrentReport() {
-    if (!currentReport) return;
-    
-    try {
-        console.log('💾 saveCurrentReport called - Saving all data to DB for date:', currentReportDate);
-        
-        // LẤY DỮ LIỆU TỪ UI INPUTS
-        const revenueInput = document.getElementById('revenueInput');
-        const closingBalanceInput = document.getElementById('closingBalanceInput');
-        
-        if (revenueInput && closingBalanceInput) {
-            const revenue = parseFloat(revenueInput.value) || 0;
-            const closingBalance = parseFloat(closingBalanceInput.value) || 0;
-            
-            console.log('📊 Saving data - Revenue:', revenue, 'Closing Balance:', closingBalance);
-            
-            // CẬP NHẬT CURRENT REPORT VỚI DỮ LIỆU MỚI NHẤT
-            currentReport.revenue = revenue;
-            currentReport.closingBalance = closingBalance;
-            
-            // ĐẢM BẢO exports tồn tại
-            if (!currentReport.exports) {
-                currentReport.exports = [];
-            }
-            
-            // LƯU TẤT CẢ VÀO DATABASE
-            await dbUpdate('reports', currentReport.reportId, {
-                revenue: revenue,
-                closingBalance: closingBalance,
-                expenses: currentReport.expenses || [],
-                transfers: currentReport.transfers || [],
-                exports: currentReport.exports || [],
-                updatedBy: getCurrentUser().employeeId,
-                updatedAt: new Date().toISOString()
-            });
-            
-            console.log('✅ All data saved to database for date:', currentReportDate);
-            
-            // CẬP NHẬT SỐ DƯ ĐẦU KỲ CHO NGÀY TIẾP THEO
-            await updateNextDayOpeningBalance(closingBalance, currentReportDate);
-            
-            // XỬ LÝ XUẤT KHO NẾU CÓ - với ngày báo cáo
-            if (currentReport.exports && currentReport.exports.length > 0) {
-                console.log('📦 Processing exports for inventory update for date:', currentReportDate);
-                await updateInventoryFromExports();
-                
-                // RESET xuất kho sau khi lưu thành công
-                currentReport.exports = [];
-                await dbUpdate('reports', currentReport.reportId, {
-                    exports: [],
-                    updatedAt: new Date().toISOString()
-                });
-            }
-            
-            showMessage(`✅ Đã lưu báo cáo thành công cho ngày ${formatDateDisplay(currentReportDate)}!`, 'success');
-            
-            // Reload để hiển thị trạng thái mới
-            setTimeout(() => {
-                loadReportsTab();
-            }, 1000);
-        }
-        
-    } catch (error) {
-        console.error('❌ Error saving report:', error);
-        showMessage('❌ Lỗi khi lưu báo cáo: ' + error.message, 'error');
-    }
-}
+
 // reports.js - cuối file
 window.loadReports = function() {
     console.log('📊 Loading reports...');
@@ -2900,3 +2730,103 @@ window.loadOverview = function() {
     console.log('👁 Loading overview...');
     if (typeof initializeOverview === 'function') initializeOverview();
 };
+
+// HÀM CHÍNH: Tải Reports
+async function loadReportsTab() {
+    try {
+        console.log('🚀 loadReportsTab called. Date:', currentReportDate);
+
+        // 1. BUỘC TẢI LẠI currentReport TỪ DB INDEX MỚI NHẤT
+        // Đây là bước quan trọng nhất để fix lỗi "không cập nhật" sau sync.
+        currentReport = await getOrCreateReport(currentReportDate); 
+
+        // 2. Lấy dữ liệu Inventory (vì renderReportsTab cần nó để tra cứu tên sản phẩm)
+        // Cần đảm bảo hàm này tồn tại ở đâu đó trong file global/database
+        const inventoryList = await dbGetAll('inventory'); 
+        // Lưu vào biến global nếu cần tra cứu thường xuyên (ví dụ: globalInventoryMap)
+        window.globalInventoryMap = new Map(inventoryList.map(item => [item.productId, item]));
+
+        // 3. Render UI chính
+        const container = document.getElementById('reports');
+        if (container) {
+            await renderReportsTab(container, currentReport);
+            
+            // 4. Setup listeners cho các nút bấm/input mới được render
+            setupReportsEventListeners(); 
+            
+            // 5. Nếu đang ở ngày hôm nay, đảm bảo số dư đầu kỳ được cập nhật đúng 
+            //    từ báo cáo ngày hôm qua (chỉ chạy khi sync hoặc mới vào)
+            if (currentReport.date === formatDate() && currentReport.openingBalance === 0) {
+                 // Có thể cần hàm check và cập nhật số dư đầu kỳ cho ngày hiện tại nếu cần
+            }
+            
+            console.log('✅ Reports Tab Rendered Successfully.');
+            
+        } else {
+            console.error('❌ Reports container not found.');
+        }
+
+    } catch (error) {
+        console.error('❌ FATAL Error loading reports tab:', error);
+        showMessage('Lỗi tải báo cáo: ' + error.message, 'error');
+    }
+}
+// EXPOSE TO WINDOW
+window.loadReportsTab = loadReportsTab;
+
+// HÀM CHÍNH: Lưu Báo cáo hiện tại
+async function saveCurrentReport() {
+    if (!currentReport) {
+        showMessage('❌ Không có báo cáo để lưu', 'error');
+        return;
+    }
+    
+    try {
+        // 1. Đảm bảo các input cuối cùng đã được cập nhật vào currentReport
+        const revenueInput = document.getElementById('revenueInput');
+        const closingBalanceInput = document.getElementById('closingBalanceInput');
+        
+        currentReport.revenue = parseFloat(revenueInput?.value) || 0;
+        currentReport.closingBalance = parseFloat(closingBalanceInput?.value) || 0;
+
+        // 2. Tính toán tổng cuối cùng (nếu cần)
+        currentReport.actualReceived = calculateActualReceived(currentReport); // Cần có hàm này
+
+        // 3. Cập nhật vào IndexedDB và Firebase (Dùng hàm dbUpdate đã có trong database.js)
+        const updatedData = {
+            ...currentReport,
+            updatedBy: getCurrentUser().employeeId,
+            updatedAt: new Date().toISOString(),
+            _synced: false // Đánh dấu chưa sync
+        };
+        
+        // Loại bỏ các trường không cần lưu (ví dụ: product object trong exports)
+        updatedData.exports = updatedData.exports.map(exp => ({
+            productId: exp.productId,
+            quantity: exp.quantity,
+            note: exp.note || ''
+        }));
+
+        await dbUpdate('reports', currentReport.reportId, updatedData);
+        
+        // 4. Cập nhật số dư đầu kỳ cho ngày hôm sau
+        await updateNextDayOpeningBalance(currentReport.closingBalance, currentReport.date);
+        
+        // 5. Đồng bộ lên Firebase (Giả sử bạn đã export syncToFirebase từ database.js)
+        if (typeof syncToFirebase === 'function') {
+            await syncToFirebase('reports', updatedData); 
+        }
+        
+        showMessage('✅ Lưu báo cáo thành công!', 'success');
+        console.log('✅ Report saved and sync queued:', currentReport.reportId);
+        
+        // Tải lại UI (quan trọng để cập nhật badge '✅' và lịch sử)
+        loadReportsTab();
+
+    } catch (error) {
+        console.error('❌ Error saving report:', error);
+        showMessage('Lỗi lưu báo cáo: ' + error.message, 'error');
+    }
+}
+// EXPOSE TO WINDOW
+window.saveCurrentReport = saveCurrentReport;

@@ -1,14 +1,67 @@
-// Employees tab functionality
 let currentEmployeeMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
-let currentEmployees = [];
-let employeeSalaries = {};
+let currentEmployees = []; // Danh sách nhân viên tải về từ DB
+let employeeSalaries = {}; // Dữ liệu lương chi tiết của nhân viên theo tháng hiện tại
+let employeesEventListenersActive = false;
+let currentSearchTerm = '';
+let isMonthSelectorOpen = false;
 
-// Initialize employees tab
+/**
+ * @name initializeEmployeesTab
+ * @description Hàm khởi tạo chính - ĐÃ FIX
+ */
 function initializeEmployeesTab() {
-    loadEmployeesData();
-    setupEmployeesEventListeners();
+    console.log('Initializing employees tab...');
+    
+    // 1. Reset các biến trạng thái
+    currentSearchTerm = '';
+    isMonthSelectorOpen = false;
+    
+    // 2. Setup event listeners (chỉ 1 lần)
+    if (!employeesEventListenersActive) {
+        setupEmployeesEventListeners();
+        employeesEventListenersActive = true;
+    }
+    
+    // 3. Load và render dữ liệu
+    _loadEmployeesAndRender().catch(error => {
+        console.error('Lỗi khởi tạo tab nhân viên:', error);
+        const container = document.getElementById('employees');
+        if (container) {
+            container.innerHTML = `
+                <div class="error-state">
+                    <h3>⚠️ Lỗi tải dữ liệu</h3>
+                    <p>Không thể tải danh sách nhân viên. Vui lòng thử lại sau.</p>
+                    <button onclick="initializeEmployeesTab()">Thử lại</button>
+                </div>
+            `;
+        }
+    });
 }
-
+async function _loadEmployeesAndRender() {
+    try {
+        // Giả định showLoading, dbGetAll là hàm global
+        if (typeof showLoading === 'function') showLoading(true);
+        
+        // 1. Tải dữ liệu nhân viên
+        currentEmployees = await dbGetAll('employees');
+        
+        // 2. Tải và tính lương
+        await loadCurrentMonthSalaries();
+        
+        // 3. Render giao diện
+        await renderEmployeesTab();
+        
+        if (typeof showLoading === 'function') showLoading(false);
+    } catch (error) {
+        console.error('❌ Error loading employees data:', error);
+        if (typeof showLoading === 'function') showLoading(false);
+        
+        const container = document.getElementById('employees');
+        if (container) {
+            container.innerHTML = `<div class="tab-error">Lỗi tải dữ liệu: ${error.message || 'Không thể kết nối hoặc xử lý dữ liệu.'}</div>`;
+        }
+    }
+}
 // Load employees data
 async function loadEmployeesData() {
     try {
@@ -36,20 +89,89 @@ async function loadCurrentMonthSalaries() {
 
 // Setup event listeners for employees tab
 function setupEmployeesEventListeners() {
+    // Chỉ setup 1 lần
+    if (employeesEventListenersActive) return;
+    
     document.addEventListener('click', function(e) {
-        if (e.target.matches('[data-action="add-employee"]')) {
-            showAddEmployeePopup();
-        } else if (e.target.matches('[data-action="show-employee"]')) {
-            const card = e.target.closest('.employee-card');
-            if (card) {
-                showEmployeeDetailPopup(card.dataset.employeeId);
-            }
-        } else if (e.target.matches('#employeeSearch')) {
-            setTimeout(() => filterEmployees(document.getElementById('employeeSearch').value), 100);
-        } else if (e.target.matches('.month-year-selector')) {
-            showMonthYearSelector();
+        const target = e.target;
+        const action = target.dataset?.action || target.closest('[data-action]')?.dataset?.action;
+        
+        if (!action) return;
+        
+        console.log('Employee action clicked:', action);
+        
+        switch(action) {
+            case 'add-employee':
+                e.preventDefault();
+                showAddEmployeePopup();
+                break;
+                
+            case 'show-employee':
+                e.preventDefault();
+                const card = target.closest('.employee-card');
+                if (card) {
+                    const employeeId = card.dataset.id || card.dataset.employeeId;
+                    console.log('Showing employee:', employeeId);
+                    if (employeeId) {
+                        showEmployeeDetailPopup(employeeId);
+                    }
+                }
+                break;
+                
+            case 'toggle-month-selector':
+                e.preventDefault();
+                e.stopPropagation();
+                isMonthSelectorOpen = !isMonthSelectorOpen;
+                renderEmployeesTab();
+                break;
+                
+            case 'change-employee-month':
+                e.preventDefault();
+                const monthString = target.dataset.month;
+                if (monthString) {
+                    changeEmployeeMonth(monthString);
+                }
+                break;
+                
+            case 'show-discipline':
+                e.preventDefault();
+                const employeeId = target.dataset.employeeId;
+                if (employeeId) {
+                    closePopup();
+                    showDisciplinePopup(employeeId);
+                }
+                break;
+                
+            case 'edit-employee':
+                e.preventDefault();
+                const editEmployeeId = target.dataset.employeeId;
+                if (editEmployeeId) {
+                    closePopup();
+                    showEditEmployeePopup(editEmployeeId);
+                }
+                break;
+                
+            case 'delete-employee-confirm':
+                e.preventDefault();
+                const deleteEmployeeId = target.dataset.employeeId;
+                if (deleteEmployeeId) {
+                    showDeleteConfirmPopup(deleteEmployeeId);
+                }
+                break;
         }
     });
+    
+    // Đóng month selector khi click ra ngoài
+    document.addEventListener('click', function(e) {
+        if (isMonthSelectorOpen && 
+            !e.target.closest('.month-selector-popup') && 
+            !e.target.closest('#monthSelectorDisplay')) {
+            isMonthSelectorOpen = false;
+            renderEmployeesTab();
+        }
+    });
+    
+    employeesEventListenersActive = true;
 }
 
 // Render employees tab

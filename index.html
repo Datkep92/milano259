@@ -6,6 +6,10 @@
     <title>Quản Lý Cafe</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="employees.css">
+    
+
+</head>
+<body>
 </head>
 <body>
     <div id="app">
@@ -21,36 +25,6 @@
                 
             </div>
         </header>
-
-        <!-- Nội dung chính -->
-        <main class="main-content">
-            <!-- Tab Báo cáo -->
-            <div id="reports" class="tab-content active"></div>
-
-            <!-- Tab Kho -->
-            <div id="inventory" class="tab-content"></div>
-
-            <!-- Tab Thống kê -->
-            <div id="statistics" class="tab-content"></div> <!-- Thêm div này -->
-
-          
-                <!-- Tab Nhân viên -->
-                <div id="employees" class="tab-content"></div>
-
-                <!-- Tab Tổng quan -->
-                <div id="overview" class="tab-content"></div>
-        
-        </main>
-
-        <!-- Popup container -->
-        <div id="popupContainer" class="popup-container"></div>
-
-        <!-- Loading overlay -->
-        <div id="loadingOverlay" class="loading-overlay">
-            <div class="loading-spinner">Đang tải...</div>
-        </div>
-    </div>
-<body>
     <div id="app">
         <!-- Header sẽ được render bằng JavaScript -->
         <header id="appHeader" class="header">
@@ -70,6 +44,7 @@
             <div id="statistics" class="tab-content"></div>
 
             <!-- Tab Nhân viên (Admin only - JS sẽ ẩn/hiện) -->
+            <!-- Tab Nhân viên -->
             <div id="employees" class="tab-content"></div>
 
             <!-- Tab Tổng quan (Admin only - JS sẽ ẩn/hiện) -->
@@ -122,264 +97,165 @@
     <!-- ========================= -->
     <script src="reports.js"></script>
     <script src="employees.js"></script>
-    <script src="inventory-period.js"></script>
     <script src="inventory.js"></script>
     <script src="statistics.js"></script>
     <script src="overview.js"></script>
     <script src="app.js"></script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('🚀 Starting app initialization...');
+                
+                // 1. Khởi tạo database
+                await initializeDatabase();
+                console.log('✅ Database initialized');
+                
+                // 2. Kiểm tra đăng nhập
+                const user = getCurrentUser();
+                if (!user) {
+                    console.log('⚠️ User not logged in, redirecting...');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                console.log('✅ User logged in:', user.name, '- Role:', user.role);
+                
+                // 3. Render header
+                
+                
+                // 4. Ẩn loading
+                const loading = document.getElementById('loadingOverlay');
+                if (loading) {
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                    }, 500);
+                }
+                
+                // 5. Load tab đầu tiên
+                loadTabContent('reports');
+                
+            } catch (error) {
+                console.error('❌ App initialization error:', error);
+                showErrorMessage(error);
+            }
+        });
 
-<script>
-    
-    document.addEventListener('DOMContentLoaded', async function() {
-        try {
-            console.log('🚀 Starting app initialization...');
-            
-            // 1. Khởi tạo database
-            await initializeDatabase();
-            console.log('✅ Database initialized');
-            
-            // 2. Kiểm tra đăng nhập
-            const user = getCurrentUser();
-            if (!user) {
-                console.log('⚠️ User not logged in, redirecting...');
-                window.location.href = 'login.html';
-                return;
-            }
-            
-            console.log('✅ User logged in:', user.name, '- Role:', user.role);
-            
-            // 3. Render header
-            renderAppHeader(user);
-            
-            // 4. Ẩn các tab không phù hợp với quyền
-            if (user.role !== 'admin') {
-                const employeesTab = document.querySelector('[data-tab="employees"]');
-                const overviewTab = document.querySelector('[data-tab="overview"]');
-                
-                if (employeesTab) employeesTab.style.display = 'none';
-                if (overviewTab) overviewTab.style.display = 'none';
-            }
-            
-            // 5. Setup tabs
-            setupTabs();
-            
-            // 6. Load tab đầu tiên
-            const activeTab = document.querySelector('.tab-btn.active');
-            if (activeTab) {
-                const tabId = activeTab.getAttribute('data-tab');
-                loadTabContent(tabId);
-            }
-            
-            // 7. Ẩn loading
-            const loading = document.getElementById('loadingOverlay');
-            if (loading) {
-                setTimeout(() => {
-                    loading.style.display = 'none';
-                }, 500);
-            }
-            
-        } catch (error) {
-            console.error('❌ App initialization error:', error);
-            showErrorMessage(error);
-        }
-    });
+        
 
-    // Hàm render header
-    function renderAppHeader(user) {
-        const header = document.getElementById('appHeader');
-        if (!header) {
-            console.error('❌ Cannot render header: #appHeader not found');
-            return;
-        }
-        
-        const isAdmin = user.role === 'admin';
-        
-        let tabsHTML = `
-            <div class="user-info">
-                <span class="user-name">👤 ${user.name || 'Nhân viên'}</span>
-                <span class="user-role">${isAdmin ? 'Quản lý' : 'Nhân viên'}</span>
-                <button id="logoutBtn" class="logout-btn" title="Đăng xuất">🚪</button>
-            </div>
-            <div class="tabs-container">
-                <button class="tab-btn active" data-tab="reports" title="Báo cáo">📈</button>
-                <button class="tab-btn" data-tab="inventory" title="Kho">📦</button>
-                <button class="tab-btn" data-tab="statistics" title="Thống kê">📊</button>
-        `;
-        
-        if (isAdmin) {
-            tabsHTML += `
-                <button class="tab-btn" data-tab="employees" title="Nhân viên">👥</button>
-                <button class="tab-btn" data-tab="overview" title="Tổng quan">👁</button>
-            `;
-        }
-        
-        tabsHTML += `</div>`;
-        header.innerHTML = tabsHTML;
-        
-        // Thêm sự kiện đăng xuất
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function() {
-                logout();
-                window.location.href = 'login.html';
-            });
-        }
-        
-        console.log('✅ Header rendered for user:', user.name);
-    }
-
-    // Hàm setup tabs
-    function setupTabs() {
-        console.log('🔄 Setting up tabs...');
-        
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-        
-        tabButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                // Xóa active class từ tất cả tab buttons
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                
-                // Xóa active class từ tất cả tab contents
-                tabContents.forEach(content => {
-                    content.classList.remove('active');
-                });
-                
-                // Thêm active class cho tab button được click
-                this.classList.add('active');
-                
-                // Hiển thị tab content tương ứng
-                const tabId = this.getAttribute('data-tab');
-                const tabContent = document.getElementById(tabId);
-                if (tabContent) {
-                    tabContent.classList.add('active');
-                    
-                    // Load dữ liệu cho tab
-                    loadTabContent(tabId);
+        // Hàm load nội dung tab
+        function loadTabContent(tabId) {
+            console.log(`📂 Loading tab: ${tabId}`);
+            
+            // Hiển thị tab content
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === tabId) {
+                    content.classList.add('active');
                 }
             });
-        });
-        
-        console.log(`✅ Tabs setup complete (${tabButtons.length} tabs)`);
-    }
-
-    // Hàm load nội dung tab
-    function loadTabContent(tabId) {
-        console.log(`📂 Loading tab: ${tabId}`);
-        
-        // Hiển thị loading
-        const tabContent = document.getElementById(tabId);
-        if (tabContent) {
-            tabContent.innerHTML = '<div class="tab-loading">Đang tải...</div>';
-        }
-        
-        // Gọi hàm load tương ứng
-        setTimeout(() => {
-            switch(tabId) {
-                case 'reports':
-                    if (typeof loadReports === 'function') {
-                        loadReports();
-                    } else {
-                        console.warn('⚠️ loadReports function not found');
-                        tabContent.innerHTML = '<div class="tab-error">Không thể tải báo cáo</div>';
-                    }
-                    break;
-                    
-                case 'inventory':
-                    if (typeof loadInventory === 'function') {
-                        loadInventory();
-                    } else {
-                        console.warn('⚠️ loadInventory function not found');
-                        tabContent.innerHTML = '<div class="tab-error">Không thể tải kho</div>';
-                    }
-                    break;
-                    
-                case 'statistics':
-                    if (typeof loadStatistics === 'function') {
-                        loadStatistics();
-                    } else {
-                        console.warn('⚠️ loadStatistics function not found');
-                        tabContent.innerHTML = '<div class="tab-error">Không thể tải thống kê</div>';
-                    }
-                    break;
-                    
-                case 'employees':
-                    if (typeof loadEmployeesData === 'function') {
-                        loadEmployeesData();
-                    } else {
-                        console.warn('⚠️ loadEmployeesData function not found');
-                        tabContent.innerHTML = '<div class="tab-error">Không thể tải nhân viên</div>';
-                    }
-                    break;
-                    
-                case 'overview':
-                    if (typeof loadOverview === 'function') {
-                        loadOverview();
-                    } else {
-                        console.warn('⚠️ loadOverview function not found');
-                        tabContent.innerHTML = '<div class="tab-error">Không thể tải tổng quan</div>';
-                    }
-                    break;
-                    
-                default:
-                    console.warn(`⚠️ Unknown tab: ${tabId}`);
-                    if (tabContent) {
-                        tabContent.innerHTML = `<div class="tab-error">Tab ${tabId} không tồn tại</div>`;
-                    }
+            
+            // Hiển thị loading
+            const tabContent = document.getElementById(tabId);
+            if (tabContent) {
+                tabContent.innerHTML = '<div class="tab-loading">Đang tải...</div>';
             }
-        }, 100);
+            
+            // Gọi hàm load tương ứng
+            setTimeout(() => {
+                switch(tabId) {
+                    case 'reports':
+                        if (typeof loadReports === 'function') {
+                            loadReports();
+                        } else {
+                            console.warn('⚠️ loadReports function not found');
+                            tabContent.innerHTML = '<div class="tab-error">Không thể tải báo cáo</div>';
+                        }
+                        break;
+                        
+                    case 'inventory':
+                        if (typeof loadInventory === 'function') {
+                            loadInventory();
+                        } else {
+                            console.warn('⚠️ loadInventory function not found');
+                            tabContent.innerHTML = '<div class="tab-error">Không thể tải kho</div>';
+                        }
+                        break;
+                        
+                    case 'statistics':
+                        if (typeof loadStatistics === 'function') {
+                            loadStatistics();
+                        } else {
+                            console.warn('⚠️ loadStatistics function not found');
+                            tabContent.innerHTML = '<div class="tab-error">Không thể tải thống kê</div>';
+                        }
+                        break;
+                        
+                    case 'employees':
+                        if (typeof loadEmployeesData === 'function') {
+                            loadEmployeesData();
+                        } else {
+                            console.warn('⚠️ loadEmployeesData function not found');
+                            tabContent.innerHTML = '<div class="tab-error">Không thể tải nhân viên</div>';
+                        }
+                        break;
+                        
+                    case 'overview':
+                        if (typeof loadOverview === 'function') {
+                            loadOverview();
+                        } else {
+                            console.warn('⚠️ loadOverview function not found');
+                            tabContent.innerHTML = '<div class="tab-error">Không thể tải tổng quan</div>';
+                        }
+                        break;
+                        
+                    default:
+                        console.warn(`⚠️ Unknown tab: ${tabId}`);
+                        if (tabContent) {
+                            tabContent.innerHTML = `<div class="tab-error">Tab ${tabId} không tồn tại</div>`;
+                        }
+                }
+            }, 100);
+        }
+
+        // Hàm hiển thị lỗi
+        function showErrorMessage(error) {
+            const loading = document.getElementById('loadingOverlay');
+            if (loading) {
+                loading.innerHTML = `
+                    <div class="error-message">
+                        <h3>⚠️ Lỗi khởi tạo ứng dụng</h3>
+                        <p>${error.message || 'Vui lòng tải lại trang'}</p>
+                        <button onclick="location.reload()" class="reload-btn">
+                            Tải lại trang
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        // Cách gọi đúng
+document.addEventListener('DOMContentLoaded', function() {
+    // Kiểm tra xem module đã load chưa
+    if (typeof window.loadEmployeesData === 'function') {
+        window.loadEmployeesData();
+    } else {
+        console.error('Employees module not loaded. Check script order.');
+        // Load file 2 nếu chưa
+        loadScript('employees.js', function() {
+            if (typeof window.loadEmployeesData === 'function') {
+                window.loadEmployeesData();
+            }
+        });
     }
+});
 
-    // Hàm hiển thị lỗi
-    function showErrorMessage(error) {
-        const loading = document.getElementById('loadingOverlay');
-        if (loading) {
-            loading.innerHTML = `
-                <div class="error-message">
-                    <h3>⚠️ Lỗi khởi tạo ứng dụng</h3>
-                    <p>${error.message || 'Vui lòng tải lại trang'}</p>
-                    <button onclick="location.reload()" class="reload-btn">
-                        Tải lại trang
-                    </button>
-                </div>
-            `;
-        }
-    }
-
-    // Thêm style cho error message
-    const errorStyle = document.createElement('style');  // Đổi tên biến
-errorStyle.textContent = `
-        .tab-loading, .tab-error {
-            padding: 40px;
-            text-align: center;
-            color: #666;
-        }
-        .error-message {
-            text-align: center;
-            padding: 40px;
-            color: #721c24;
-            background-color: #f8d7da;
-            border-radius: 5px;
-            margin: 20px;
-        }
-        .reload-btn {
-            padding: 10px 20px;
-            margin-top: 20px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .reload-btn:hover {
-            background: #45a049;
-        }
-    `;
-    document.head.appendChild(style);
-    
-</script>
-
+function loadScript(src, callback) {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = callback;
+    document.head.appendChild(script);
+}
+    </script>
 </body>
 </html>

@@ -653,7 +653,6 @@ window.loadStatistics = function() {
 // employees.js - cuối file
 window.loadEmployeesData = function() {
     console.log('👥 Loading employees...');
-    if (typeof initializeEmployees === 'function') initializeEmployees();
 };
 
 // overview.js - cuối file

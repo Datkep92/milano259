@@ -104,10 +104,18 @@ function initializeCurrentTab() {
                 initializeStatisticsTab();
                 break;
             case 'employees':
-                if (isAdmin()) initializeEmployeesTab();
+                if (typeof initializeEmployeesTab === 'function') {
+    initializeEmployeesTab();
+} else if (typeof loadEmployeesData === 'function') {
+    loadEmployeesData();
+} else if (typeof EMP_loadEmployeesData === 'function') {
+    EMP_loadEmployeesData();
+} else {
+    console.error('No employees tab function found!');
+}
                 break;
             case 'overview':
-                if (isAdmin()) initializeOverviewTab();
+                initializeOverviewTab();
                 break;
             default:
                 console.warn('Unknown tab:', currentTab);

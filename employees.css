@@ -1933,3 +1933,141 @@
     pointer-events: none;
 }
 
+/* ========================================================= */
+/* POPUP STYLES - FIX OVERLAY ISSUE */
+/* ========================================================= */
+
+/* Overlay phủ toàn màn hình */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.popup-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Popup chính */
+.popup {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 10000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: popupFadeIn 0.3s ease-out;
+}
+
+@keyframes popupFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Popup chi tiết nhân viên */
+.employee-detail-popup {
+    width: 800px;
+    max-width: 95%;
+    min-height: 300px;
+    position: relative;
+}
+
+/* Nút đóng popup */
+.close-btn, .close-popup {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #666;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    z-index: 10001;
+}
+
+.close-btn:hover, .close-popup:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+/* Đảm bảo popup hiển thị trên cùng */
+.popup, .employee-detail-popup, .attendance-options-popup {
+    z-index: 10000 !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+}
+
+/* Fix cho work log trong popup */
+.work-log-container {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.work-log-item {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.work-log-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    font-size: 13px;
+}
+
+.legend-icon {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    line-height: 20px;
+    border-radius: 4px;
+    margin-right: 5px;
+}
+
+/* Trạng thái màu sắc */
+.status-work { background-color: #e3f2fd; color: #1976d2; }
+.status-overtime { background-color: #e8f5e9; color: #2e7d32; }
+.status-sick { background-color: #fff3e0; color: #f57c00; }
+.status-off { background-color: #ffebee; color: #d32f2f; }
+.status-weekend { background-color: #f3e5f5; color: #7b1fa2; }
+
